@@ -35,6 +35,10 @@ P_outc = 1.01325e5
 h_w = water(T_inh,T_outh,P_inh,P_outh)
 c_w = water(T_inc,T_outc,P_inc,P_outc)
 
+#heat capacities
+Cc = m_c*c_w.cp
+Ch = m_h*h_w.cp
+
 #mass flow in one tube
 m_tube = m_h/hx.tube_number
 
@@ -75,3 +79,18 @@ dP_shell_ovr = dP_shell + dP_nozzles_c
 
 #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
 
+#thermal design
+hi = hxf.hi(V_tube,hx.tube.d_inner,h_w)
+ho = hxf.ho(V_shell,hx.tube.d_outer,c_w,tube_layout='s')
+
+U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
+
+A_con = hx.convection_area
+
+#now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
+
+#now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
+#need to use lmtd and e-ntu approaches
+
+T_outc = T_inc + (1/Cc)*hxf.LMTD(T_inc,T_inh,T_outc,T_outh)
+T_outh = T_inh - (1/Ch)*hxf.LMTD(T_inc,T_inh,T_outc,T_outh)

@@ -12,10 +12,10 @@ class water:
         self.avg_P = (Pin + Pout)/2
 
         w = _Liquid(self.avg_T + 273.15, self.avg_P / 1e6) #needs to be in degrees C and Pa
-        self.cp = w['cp']
+        self.cp = w['cp'] *1000
         self.k = w['k']
         self.mu = w['mu']
-        self.Pr = w['cp']*w['mu']/w['k']
+        self.Pr = self.cp*self.mu/self.k
         self.rho = w['rho']
 
 class pipe:
@@ -71,7 +71,7 @@ class HX:
         self.baffle_spacing = self.tube_length/(1+self.baffle_number) #B, spacing between baffles
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
         self.A_shell = self.shell.d_inner*(self.pitch-self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
-
+        self.convection_area = np.pi*self.tube.d_inner*self.tube_length*tube_number # total area of tube surface for convection
         
     def total_mass(self):
         #calculate total mass of heat exchanger

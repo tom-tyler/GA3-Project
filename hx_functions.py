@@ -23,16 +23,11 @@ def Re(V,d,liquid):
 
 def hi(V_tube,di,liquid):
 
-    mu = liquid.mu
-    rho = liquid.rho
-    Pr = liquid.Pr
-    k = liquid.k
+    R = Re(V_tube,di,liquid)
 
-    Re = Re(V_tube,di,liquid)
+    Nu = 0.023*R**0.8*liquid.Pr**0.3
 
-    Nu = 0.023*Re**0.8*Pr**0.3
-
-    hi = Nu*k/di
+    hi = Nu*liquid.k/di
 
     return hi
 
@@ -45,9 +40,9 @@ def ho(V_shell,do,liquid,tube_layout):
         c= 0.2
         print('error, invalid tube layout')
 
-    Re = Re(V_shell,do,liquid)
+    R = Re(V_shell,do,liquid)
 
-    Nu = c*Re**0.6*liquid.Pr**0.3
+    Nu = c*R**0.6*liquid.Pr**0.3
 
     ho = Nu*liquid.k/do
 
@@ -97,3 +92,17 @@ def dP_shell(V,liquid,do,N,tube_layout):
     dP = 4*a*Re_shell**(-0.15)*N*liquid.rho*(V**2)
 
     return dP
+
+def Q(Cc,T_outc,T_inc):
+    Q = Cc*(T_outc - T_inc)
+    return Q
+
+def effectiveness(Q,Cc,Ch,T_inc,T_inh):
+
+    if Cc > Ch:
+        e = Q / (Ch*(T_inh - T_inc))
+    else:
+        e = Q / (Cc*(T_inh - T_inc))
+    
+    return e
+
