@@ -1,6 +1,6 @@
 import numpy as np
 from iapws._iapws import _Liquid
-import functions as hxf
+import hx_functions as hxf
 
 class water:
     def __init__(self,Tin,Tout,Pin,Pout):

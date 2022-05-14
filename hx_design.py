@@ -1,8 +1,8 @@
 import numpy as np
 from iapws._iapws import _Liquid
-from classes_hx import HX,water
+from hx_classes import HX,water
 
-import functions as hxf
+import hx_functions as hxf
 
 baffles = 9
 length = 0.35
