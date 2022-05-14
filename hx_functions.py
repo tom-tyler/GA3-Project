@@ -45,16 +45,11 @@ def ho(V_shell,do,liquid,tube_layout):
         c= 0.2
         print('error, invalid tube layout')
 
-    mu = liquid.mu
-    rho = liquid.rho
-    Pr = liquid.Pr
-    k = liquid.k
-
     Re = Re(V_shell,do,liquid)
 
-    Nu = c*Re**0.6*Pr**0.3
+    Nu = c*Re**0.6*liquid.Pr**0.3
 
-    ho = Nu*k/do
+    ho = Nu*liquid.k/do
 
     return ho
 
