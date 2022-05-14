@@ -1,9 +1,8 @@
 from scipy.optimize import fsolve
 import numpy as np
-from classes_hx import water
 
 
-def f(Re, eD):
+def friction_factor(Re, eD=0):
     A = eD/3.7+(6.7/Re)**0.9
     fo = 1/(-2*np.log10(eD/3.7-5.02/Re*np.log10(A)))**2
 
@@ -15,11 +14,11 @@ def f(Re, eD):
 
 def V(m_dot,liquid,area):
     rho = liquid.rho
-    V = m_dot/(rho*A)
+    V = m_dot/(rho*area)
     return V
 
-def Re(V,d,mu,rho):
-    Re = (V*d*rho)/mu
+def Re(V,d,liquid):
+    Re = (V*d*liquid.rho)/liquid.mu
     return Re
 
 def hi(V_tube,di,liquid):
@@ -29,7 +28,7 @@ def hi(V_tube,di,liquid):
     Pr = liquid.Pr
     k = liquid.k
 
-    Re = Re(V_tube,di,mu,rho)
+    Re = Re(V_tube,di,liquid)
 
     Nu = 0.023*Re**0.8*Pr**0.3
 
@@ -37,7 +36,7 @@ def hi(V_tube,di,liquid):
 
     return hi
 
-def ho(V_shell,do,liquid,tube_layout='t'):
+def ho(V_shell,do,liquid,tube_layout):
     if tube_layout == 't':
         c = 0.2
     elif tube_layout == 's':
@@ -51,7 +50,7 @@ def ho(V_shell,do,liquid,tube_layout='t'):
     Pr = liquid.Pr
     k = liquid.k
 
-    Re = Re(V_shell,do,mu,rho)
+    Re = Re(V_shell,do,liquid)
 
     Nu = c*Re**0.6*Pr**0.3
 
@@ -59,13 +58,47 @@ def ho(V_shell,do,liquid,tube_layout='t'):
 
     return ho
 
-
 def LMTD(T_1in,T_2in,T_1out,T_2out):
     lmtd = ((T_2in - T_1out) - (T_2out - T_1in)) / np.log((T_2in - T_1out) / (T_2out - T_1in))
     return lmtd
 
-def U_inside(hi,ho,Ai,Ao,ri,ro,k_copper,L):
+def U_inside(hi,ho,di,do,L,k_copper = 398):
+
+    ro = do/2
+    ri = di/2
+    Ao = np.pi*do*L
+    Ai = np.pi*di*L
 
     U = 1 / (1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho))
     return U
 
+def dP_tube(L,di,liquid,V):
+
+    f = friction_factor(Re(V,di,liquid))
+
+    dP = f*(L/di)*0.5*liquid.rho*V**2
+    return dP
+
+def dP_inout(liquid,V,Kc,Ke):
+    dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
+    return dP
+
+def dP_nozzle(V,liquid):
+    dP = 0.5*liquid.rho*(V**2)
+    return dP
+
+def dP_shell(V,liquid,do,N,tube_layout):
+
+    Re_shell = Re(V,do,liquid)
+
+    if tube_layout == 't':
+        a = 0.2
+    elif tube_layout == 's':
+        a = 0.34
+    else:
+        a = 0.2
+        print('error, invalid tube layout')
+
+    dP = 4*a*Re_shell**(-0.15)*N*liquid.rho*(V**2)
+
+    return dP

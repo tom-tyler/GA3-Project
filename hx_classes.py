@@ -11,7 +11,7 @@ class water:
         self.avg_T = (Tin + Tout)/2
         self.avg_P = (Pin + Pout)/2
 
-        w = _Liquid(self.avg_T, self.avg_P)
+        w = _Liquid(self.avg_T + 273.15, self.avg_P / 1e6) #needs to be in degrees C and Pa
         self.cp = w['cp']
         self.k = w['k']
         self.mu = w['mu']
@@ -26,7 +26,7 @@ class pipe:
         self.max_l = max_l
         self.l = l
         self.mass = self.l*self.rho_l
-        self.c_area = np.pi*self.d_inner**2/4
+        self.c_area = (np.pi*d_inner**2)/4
 
 class sheet:
     def __init__(self,thickness,rho_A,geometry,circular = False):
@@ -35,13 +35,13 @@ class sheet:
 
         if circular == True:
             self.diameter = geometry
-            self.area = np.pi*self.diameter**2/4
+            self.area = (np.pi*self.diameter**2)/4
         else:
             self.area = geometry
         self.mass = self.area*self.rho_A
 
 class HX:
-    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout='t',approximate_glue_mass=0):
+    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,approximate_glue_mass=0):
 
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
@@ -51,10 +51,12 @@ class HX:
         self.tube_length = tube_length #length of copper tubes carrying fluid
         self.shell_length = shell_length #length of shell
         self.baffle_area = baffle_area #cross-sectional area of baffle
+        self.shell_passes = shell_passes
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
 
         #fixed heat exchanger parameters
         self.nozzle_bore = 20e-3 #bore size of nozzle
+        self.nozzle_c_area = (np.pi*self.nozzle_bore**2)/4
         self.no_nozzles = 4 #number of nozzles
         self.nozzle_mass = 0.025 #mass of nozzles
         self.plate_number = 4 #number of plates
@@ -66,9 +68,9 @@ class HX:
         self.baffle = sheet(1.5e-3,2.39,self.baffle_area)
 
         #derived quantities
-        self.B = self.tube_length/(1+self.baffle_number) #B, spacing between baffles
+        self.baffle_spacing = self.tube_length/(1+self.baffle_number) #B, spacing between baffles
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
-        self.A_shell = self.shell.d_inner*(self.pitch-self.tube.d_outer)*self.B/self.pitch #area through which shell fluid can flow
+        self.A_shell = self.shell.d_inner*(self.pitch-self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
 
         
     def total_mass(self):
