@@ -16,6 +16,7 @@ m_c = 0.50 #initial guess for cold mass flow rate
 #specified inlet temperatures
 T_inh = 60
 T_inc = 20
+
 #initial guesses for outlet temperatures
 T_outh = 50
 T_outc = 25
@@ -66,7 +67,7 @@ while (abs(per_e_Q) > accuracy) and (abs(per_e_eff) > accuracy):
     dP_nozzles_h = 2 * hxf.dP_nozzle(V_nozzle_h,h_w)
 
     #overall pressure drop
-    dP_tube_ovr = hx.tube_number*dP_tube + dP_in_plus_out + dP_nozzles_h
+    dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h
 
 
     # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout

@@ -1,5 +1,6 @@
 from scipy.optimize import fsolve
 import numpy as np
+from scipy.interpolate import interp1d
 
 
 def friction_factor(Re, eD=0):
@@ -105,4 +106,29 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
         e = Q / (Cc*(T_inh - T_inc))
     
     return e
+
+def KcKe(sigma):
+
+    #values of exit and entrance pressure loss coefficient for turbulent flow, Re = 10 000
+    Kc =  0.51 - (0.41/1) * sigma
+
+    Ke_wrongway_array = [[0,1],
+        [0.1,0.8],
+        [0.2,0.62],
+        [0.3,0.46],
+        [0.4,0.32],
+        [0.5,0.2],
+        [0.6,0.1],
+        [0.7,0.03],
+        [0.8,-0.03],
+        [0.9,-0.07],
+        [1.-0.1]] #sigma,Ke
+
+    Ke_array = zip(Ke_wrongway_array)
+
+    Ke_f = interp1d(Ke_array[0],Ke_array[1])
+    
+    Ke = Ke_f(sigma)
+
+    return Kc,Ke
 
