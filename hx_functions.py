@@ -1,3 +1,4 @@
+from re import M
 from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
@@ -169,14 +170,14 @@ def mdot_dP(m_dot,dP_ovr,side):
     dP_new = dP_from_mdot(m_dot)
     m_dot_new = mdot_from_dP(dP_ovr)
 
-    per_e_dP = (dP_new - dP_ovr)/dP_ovr
-    per_e_mdot = (m_dot_new - m_dot)/m_dot
+    rel_e_dP = (dP_new - dP_ovr)/dP_ovr
+    rel_e_mdot = (m_dot_new - m_dot)/m_dot
 
-    if per_e_dP > 0:
-        s = 1 + abs(per_e_mdot)
-    else:
-        s = 1 - abs(per_e_mdot)
+    # if rel_e_mdot > 0:
+    #     m_dot = m_dot_new
+    # else:
+    #     s = 1 - abs(rel_e_mdot)
 
-    m_dot = s*m_dot
+    m_dot = (m_dot + m_dot_new)/2
 
-    return m_dot,per_e_dP,per_e_mdot
+    return m_dot,rel_e_dP,rel_e_mdot

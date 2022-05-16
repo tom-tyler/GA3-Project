@@ -63,6 +63,7 @@ while (abs(dP_e) > accuracy) and (abs(m_e) > accuracy):
 
       #sigma, used to find ke and kc
       sigma = hx.sigma
+      sigma_nozzle = hx.sigma_nozzle
 
       #pressure drop in a single tube
       dP_tube = hxf.dP_tube(hx.tube_length,hx.tube.d_inner,h_w,V_tube)
@@ -70,11 +71,14 @@ while (abs(dP_e) > accuracy) and (abs(m_e) > accuracy):
       #pressure drop due to separation leaving tubes
       dP_in_plus_out = hxf.dP_inout(h_w,V_tube,sigma)
 
+      #pressure drop due to separation leaving nozzle
+      dP_in_plus_out_nozzle = hxf.dP_inout(h_w,V_nozzle_h,sigma_nozzle)
+
       #head loss in nozzle
       dP_nozzles_h = 2 * hxf.dP_nozzle(V_nozzle_h,h_w)
 
       #overall pressure drop
-      dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h
+      dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle
       print(dP_tube_ovr)
 
       # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout

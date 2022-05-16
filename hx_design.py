@@ -7,15 +7,15 @@ import hx_functions as hxf
 
 accuracy = 0.001
 
-hx = HX(13,9,14e-3,350e-3,500e-3,16e-4,tube_layout='s',shell_passes=1)
+hx = HX(13,14,12e-3,362e-3,450e-3,16e-4,tube_layout='t',shell_passes=1,nozzle_bore=25e-3)
 
 #initial values:
 m_h = 0.45 #initial guess for hot mass flow rate
 m_c = 0.50 #initial guess for cold mass flow rate
 
 #specified inlet temperatures
-T_inh = 60
-T_inc = 20
+T_inh = 53.4
+T_inc = 19.7
 
 #initial guesses for outlet temperatures
 T_outh = 50
@@ -63,6 +63,8 @@ while (abs(per_e_Q) > accuracy) and (abs(per_e_eff) > accuracy):
 
         #sigma, used to find ke and kc
         sigma = hx.sigma
+        sigma_nozzle = hx.sigma_nozzle
+        print(sigma_nozzle)
     
         #pressure drop in a single tube
         dP_tube = hxf.dP_tube(hx.tube_length,hx.tube.d_inner,h_w,V_tube)
@@ -70,11 +72,14 @@ while (abs(per_e_Q) > accuracy) and (abs(per_e_eff) > accuracy):
         #pressure drop due to separation leaving tubes
         dP_in_plus_out = hxf.dP_inout(h_w,V_tube,sigma)
 
+        #pressure drop due to separation leaving nozzle
+        dP_in_plus_out_nozzle = hxf.dP_inout(h_w,V_nozzle_h,sigma_nozzle)
+
         #head loss in nozzle
         dP_nozzles_h = 2 * hxf.dP_nozzle(V_nozzle_h,h_w)
 
         #overall pressure drop
-        dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h
+        dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle
 
         # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
         m_h, dP_e_h, m_e_h = hxf.mdot_dP(m_h,dP_tube_ovr,'h')

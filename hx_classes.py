@@ -41,7 +41,7 @@ class sheet:
         self.mass = self.area*self.rho_A
 
 class HX:
-    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,co_counter='counter',approximate_glue_mass=0):
+    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,nozzle_bore,co_counter='counter',approximate_glue_mass=0):
 
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
@@ -50,13 +50,14 @@ class HX:
         self.tube_layout = tube_layout #if tubes laid out in a triangular fashion, tube_layout = 't', if laid out in square fashion, tube_layout = 's'
         self.tube_length = tube_length #length of copper tubes carrying fluid
         self.shell_length = shell_length #length of shell
+        self.shell_end_length = (shell_length-tube_length)/2
         self.baffle_area = baffle_area #cross-sectional area of baffle
         self.shell_passes = shell_passes
         self.co_counter = co_counter
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
+        self.nozzle_bore = nozzle_bore #bore size of nozzle
 
         #fixed heat exchanger parameters
-        self.nozzle_bore = 20e-3 #bore size of nozzle
         self.nozzle_c_area = (np.pi*self.nozzle_bore**2)/4
         self.no_nozzles = 4 #number of nozzles
         self.nozzle_mass = 0.025 #mass of nozzles
@@ -68,9 +69,12 @@ class HX:
         self.plate = sheet(4.5e-3,6.375,self.shell.d_inner,circular = True)
         self.baffle = sheet(1.5e-3,2.39,self.baffle_area)
 
+        self.nozzle_exit_area = (self.shell_end_length)*(self.nozzle_bore + self.plate.diameter)/2
+
         #derived quantities
         self.baffle_spacing = self.tube_length/(1+self.baffle_number) #B, spacing between baffles
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
+        self.sigma_nozzle = self.nozzle_c_area/(self.nozzle_exit_area)
         self.A_shell = self.shell.d_inner*(self.pitch-self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
         self.convection_area = np.pi*self.tube.d_inner*self.tube_length*tube_number # total area of tube surface for convection
         
