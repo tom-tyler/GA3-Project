@@ -41,7 +41,7 @@ class sheet:
         self.mass = self.area*self.rho_A
 
 class HX:
-    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,approximate_glue_mass=0):
+    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,co_counter='counter',approximate_glue_mass=0):
 
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
@@ -52,6 +52,7 @@ class HX:
         self.shell_length = shell_length #length of shell
         self.baffle_area = baffle_area #cross-sectional area of baffle
         self.shell_passes = shell_passes
+        self.co_counter = co_counter
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
 
         #fixed heat exchanger parameters

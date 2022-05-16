@@ -70,8 +70,12 @@ def dP_tube(L,di,liquid,V):
     dP = f*(L/di)*0.5*liquid.rho*V**2
     return dP
 
-def dP_inout(liquid,V,Kc,Ke):
+def dP_inout(liquid,V,sigma):
+
+    Kc,Ke = KcKe(sigma)
+
     dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
+
     return dP
 
 def dP_nozzle(V,liquid):
@@ -112,7 +116,7 @@ def KcKe(sigma):
     #values of exit and entrance pressure loss coefficient for turbulent flow, Re = 10 000
     Kc =  0.51 - (0.41/1) * sigma
 
-    Ke_wrongway_array = [[0,1],
+    Ke_array = np.array([[0,1],
         [0.1,0.8],
         [0.2,0.62],
         [0.3,0.46],
@@ -122,13 +126,57 @@ def KcKe(sigma):
         [0.7,0.03],
         [0.8,-0.03],
         [0.9,-0.07],
-        [1.-0.1]] #sigma,Ke
+        [1.0,-0.1]]) #sigma,Ke
 
-    Ke_array = list(zip(Ke_wrongway_array))
-
-    Ke_f = interp1d(Ke_array[0],Ke_array[1])
+    Ke_f = interp1d(Ke_array[:,0],Ke_array[:,1])
     
     Ke = Ke_f(sigma)
 
-    return Kc,Ke
+    return float(Kc),float(Ke)
 
+def mdot_dP(m_dot,dP_ovr,side):
+
+    if side == 'h':
+        mdot_dP_array = np.array([[0.4583,   0.1333e5],
+                                [0.4236,   0.1756e5],
+                                [0.4010,   0.2024e5],
+                                [0.3611,   0.2577e5],
+                                [0.3125,   0.3171e5],
+                                [0.2639,   0.3633e5],
+                                [0.2222,   0.4233e5],
+                                [0.1597,   0.4784e5],
+                                [0.1181,   0.5330e5],
+                                [0.0694,   0.5715e5]]) #[mass flow rate,pressure difference] for hot side
+    elif side == 'c':
+        mdot_dP_array = np.array([[0.5833,   0.1113e5],
+                                [0.5083,   0.2157e5],
+                                [0.4750,   0.2538e5],
+                                [0.4250,   0.3168e5],
+                                [0.3792,   0.3613e5],
+                                [0.3417,   0.4031e5],
+                                [0.2958,   0.4511e5],
+                                [0.2583,   0.4846e5],
+                                [0.2125,   0.5181e5],
+                                [0.1708,   0.5573e5]]) #[mass flow rate, pressure difference] for cold side
+
+    else:
+        print('please input side correctly')
+    
+
+    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate')
+    dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate')
+
+    dP_new = dP_from_mdot(m_dot)
+    m_dot_new = mdot_from_dP(dP_ovr)
+
+    per_e_dP = (dP_new - dP_ovr)/dP_ovr
+    per_e_mdot = (m_dot_new - m_dot)/m_dot
+
+    if per_e_dP > 0:
+        s = 1 + abs(per_e_mdot)
+    else:
+        s = 1 - abs(per_e_mdot)
+
+    m_dot = s*m_dot
+
+    return m_dot,per_e_dP,per_e_mdot
