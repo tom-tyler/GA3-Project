@@ -124,7 +124,7 @@ def KcKe(sigma):
         [0.9,-0.07],
         [1.-0.1]] #sigma,Ke
 
-    Ke_array = zip(Ke_wrongway_array)
+    Ke_array = list(zip(Ke_wrongway_array))
 
     Ke_f = interp1d(Ke_array[0],Ke_array[1])
     
