@@ -4,13 +4,8 @@ from hx_classes import HX,water
 
 import hx_functions as hxf
 
-baffles = 9
-length = 0.35
-tubes = 13
 
-k_tube = 386
-
-
+accuracy = 0.001
 
 hx = HX(13,9,14e-3,350e-3,500e-3,16e-4,tube_layout='s',shell_passes=1)
 
@@ -32,11 +27,12 @@ P_inc = 1.01325e5
 P_outc = 1.01325e5
 
 #initial heat transfer parameters
-Q_new,eff_new = 0,0
+heat_transfer,eff = 1,1
+heat_transfer_new,eff_new = 1,1
 Q_counter = 0
 per_e_Q,per_e_eff = 1,1
 
-while (abs(per_e_Q) > 0.01) and (abs(per_e_eff) > 0.01):
+while (abs(per_e_Q) > accuracy) and (abs(per_e_eff) > accuracy):
 
     #creating hot and cold water objects
     h_w = water(T_inh,T_outh,P_inh,P_outh)
@@ -96,10 +92,10 @@ while (abs(per_e_Q) > 0.01) and (abs(per_e_eff) > 0.01):
 
     #now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
 
-    T_outc_new,T_outh_new = 0,0
+    T_outc_new,T_outh_new = 1,1
     T_counter = 0
     per_eh,per_ec = 1,1
-    while (abs(per_ec) > 0.01) and (abs(per_eh) > 0.01):
+    while (abs(per_ec) > accuracy) and (abs(per_eh) > accuracy):
         T_outc_new = T_inc + (1/Cc)*A_con*U*hxf.LMTD(T_inc,T_inh,T_outc,T_outh)
         T_outh_new = T_inh - (1/Ch)*A_con*U*hxf.LMTD(T_inc,T_inh,T_outc,T_outh)
         per_ec = (T_outc_new - T_outc)/T_outc
@@ -112,8 +108,15 @@ while (abs(per_e_Q) > 0.01) and (abs(per_e_eff) > 0.01):
             print('exceeded max iterations')
             break
 
-    heat_transfer = hxf.Q(Cc,T_outc,T_inc)
-    effectiveness = hxf.effectiveness(heat_transfer,Cc,Ch,T_inc,T_inh)
+    heat_transfer_new = hxf.Q(Cc,T_outc,T_inc)
+    eff_new = hxf.effectiveness(heat_transfer_new,Cc,Ch,T_inc,T_inh)
+    per_e_Q = (heat_transfer - heat_transfer_new)/heat_transfer
+    per_e_eff = (eff - eff_new)/eff
+    eff = eff_new
+    heat_transfer = heat_transfer_new
+    Q_counter += 1
+
+    print(heat_transfer)
 
 
     if Q_counter > 100:
