@@ -41,7 +41,7 @@ class sheet:
         self.mass = self.area*self.rho_A
 
 class HX:
-    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,nozzle_bore,co_counter='counter',approximate_glue_mass=0):
+    def __init__(self,tube_number,baffle_number,pitch,tube_length,shell_length,baffle_area,tube_layout,shell_passes,nozzle_bore,F,co_counter='counter',approximate_glue_mass=0):
 
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
@@ -54,6 +54,7 @@ class HX:
         self.baffle_area = baffle_area #cross-sectional area of baffle
         self.shell_passes = shell_passes
         self.co_counter = co_counter
+        self.F = F
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
         self.nozzle_bore = nozzle_bore #bore size of nozzle
 
@@ -76,7 +77,7 @@ class HX:
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
         self.sigma_nozzle = self.nozzle_c_area/(self.nozzle_exit_area)
         self.A_shell = self.shell.d_inner*(self.pitch-self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
-        self.convection_area = np.pi*self.tube.d_inner*self.tube_length*tube_number # total area of tube surface for convection
+        self.convection_area = np.pi*self.tube.d_inner*(self.tube_length - 2*self.plate.thickness)*tube_number # total area of tube surface for convection
         
     def total_mass(self):
         #calculate total mass of heat exchanger

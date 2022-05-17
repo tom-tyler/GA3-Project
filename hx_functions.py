@@ -61,8 +61,9 @@ def U_inside(hi,ho,di,do,L,k_copper = 398):
     Ao = np.pi*do*L
     Ai = np.pi*di*L
 
-    U = 1 / (1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho))
-    return U
+    inv_U = 1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho)
+    
+    return 1/inv_U
 
 def dP_tube(L,di,liquid,V):
 
@@ -99,8 +100,12 @@ def dP_shell(V,liquid,do,N,tube_layout):
 
     return dP
 
-def Q(Cc,T_outc,T_inc):
+def Q_c(Cc,T_outc,T_inc):
     Q = Cc*(T_outc - T_inc)
+    return Q
+
+def Q_h(Ch,T_outh,T_inh):
+    Q = Ch*(T_inh - T_outh)
     return Q
 
 def effectiveness(Q,Cc,Ch,T_inc,T_inh):
@@ -135,7 +140,7 @@ def KcKe(sigma):
 
     return float(Kc),float(Ke)
 
-def mdot_dP(m_dot,dP_ovr,side):
+def mdot_dP(m_dot,dP_ovr,side,liquid):
 
     if side == 'h':
         mdot_dP_array = np.array([[0.4583,   0.1333e5],
@@ -167,16 +172,11 @@ def mdot_dP(m_dot,dP_ovr,side):
     mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate')
     dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate')
 
-    dP_new = dP_from_mdot(m_dot)
-    m_dot_new = mdot_from_dP(dP_ovr)
+    dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
+    m_dot_new = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
 
     rel_e_dP = (dP_new - dP_ovr)/dP_ovr
     rel_e_mdot = (m_dot_new - m_dot)/m_dot
-
-    # if rel_e_mdot > 0:
-    #     m_dot = m_dot_new
-    # else:
-    #     s = 1 - abs(rel_e_mdot)
 
     m_dot = (m_dot + m_dot_new)/2
 
