@@ -89,10 +89,20 @@ class HX:
         self.plate = sheet(4.5e-3,6.375,self.shell.d_inner,circular = True)
         
         self.baffle_type = baffle_type #across shell denoted by 'across'. Along shell denoted by 'along', along shell, but axisymmetric denoted by 'axial'
-        if baffle_type == 'across':
+        
+        if baffle_type == 'across_c': #normal case
             r = self.shell.d_inner/2
             self.segment_area = r**2 * np.arccos((r - baffle_gap)/r) - (r - baffle_gap)*(2*r*baffle_gap - baffle_gap**2)**0.5
             self.baffle_area = self.shell.c_area - self.segment_area
+
+        elif baffle_type == 'across_b': #alternating circles and doughnuts, need to use a dictionary for baffle gap
+            self.baffle_area_doughnut = self.shell.c_area - (self.shell.d_inner - 2*baffle_gap['doughnut'])**2*np.pi/4
+            self.baffle_area_disk = (self.shell.d_inner - 2*baffle_gap['disk'])**2*np.pi/4
+            self.baffle_area = np.mean(self.baffle_area_disk,self.baffle_area_doughnut)
+        
+        elif baffle_type == 'across_a':
+            self.baffel_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
+
         elif baffle_type == 'along':
             self.baffle_area = 0 #need to do this
         elif baffle_type == 'axial':
