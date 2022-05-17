@@ -74,6 +74,9 @@ while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
     heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
     eff = hxf.effectiveness(heat_transfer,Cc,Ch,T_inc,T_inh)
 
+    heat_transfer_ntu = thermal['q_ntu']
+    eff_ntu = thermal['eff_ntu']
+
     Q_counter += 1
 
     if Q_counter > 100:
@@ -83,31 +86,12 @@ while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
     #now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
     #need to use lmtd and e-ntu approaches
 
-<<<<<<< HEAD
 
-def NTU():
-    #ntu approach
-    cmin = min(Cc,Ch)
-    cmax = max(Cc,Ch)
-    qmax = cmin * (T_inh - T_outc) #maximum possible heat tranfer
-    Cr = cmin/cmax #ratio of specific heats 
-    U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
-    A = 0.5 * np.pi*(hx.do * hx.L + hx.di * hx.L) * hx.tube_number #currently uses average of inside and outside area, check
-    NTU = (U * A)/cmin
-    if  hx.co_counter == 'counter':
-        e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
-    if hx.co_counter == 'co':
-        e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
-    else:
-        print('Error, heat exchanger must be counter or co flow') 
-    #may need something about mixed flow here later
-    q = qmax * e
-    return q
-=======
-print('Q:',heat_transfer)
-print('eff:',eff)
+print('Q_LMTD:',heat_transfer)
+print('Q_NTU:',heat_transfer_ntu)
+print('eff_lmtd:',eff)
+print('eff_mtu:',eff_ntu)
 print('T_outh',T_outh,'T_outc',T_outc)
 print('m_h',m_h,'m_c',m_c)
 print('dP_hot',dP_hot,'dP_cold',dP_cold)
 print('mass:',hx.total_mass())
->>>>>>> 56246f44ec8cedee1f9618e5afe5e318b266fc4e

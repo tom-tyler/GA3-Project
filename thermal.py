@@ -1,6 +1,7 @@
 import hx_functions as hxf
 from hx_classes import HX,water
 from scipy.optimize import fsolve
+import numpy as np
 
 def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,F):
     
@@ -11,6 +12,22 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     print(U)
 
     A_con = hx.convection_area
+
+    cmin = min(Cc,Ch)
+    cmax = max(Cc,Ch)
+    qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
+    Cr = cmin/cmax #ratio of specific heats 
+    NTU = (U * A_con)/cmin
+    print(f'counter or co: {hx.co_counter}')
+    if  hx.co_counter == 'counter':
+        e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
+    elif hx.co_counter == 'co':
+        e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
+    else:
+        print('Error, heat exchanger must be counter or co flow') 
+    #may need something about mixed flow here later
+    q_ntu = qmax * e
+
 
     #now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
 
@@ -36,6 +53,6 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
             print('exceeded max iterations for T')
             break
 
-    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1}
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e}
     return thermal
 
