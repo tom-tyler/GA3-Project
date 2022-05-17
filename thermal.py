@@ -9,8 +9,6 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     ho = hxf.ho(V_shell,hx.tube.d_outer,c_w,hx.tube_layout)
 
     U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
-    print(U)
-
     A_con = hx.convection_area
 
     cmin = min(Cc,Ch)
@@ -18,7 +16,6 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
     NTU = (U * A_con)/cmin
-    print(f'counter or co: {hx.co_counter}')
     if  hx.co_counter == 'counter':
         e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
     elif hx.co_counter == 'co':
