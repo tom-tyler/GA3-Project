@@ -3,11 +3,14 @@ from hx_classes import HX,water
 from scipy.optimize import fsolve
 import numpy as np
 
-def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,F):
+def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,F,m_c,d_tube):
     
     hi = hxf.hi(V_tube,hx.tube.d_inner,h_w)
-    ho = hxf.ho(V_shell,hx.tube.d_outer,c_w,hx.tube_layout)
+    ho = hxf.ho1(hx.tube.d_outer, c_w, hx.pitch, hx.baffle_area, hx.A_shell, hx.shell.d_inner, hx.tube_length, hx.baffle_spacing, m_c)
+    ho2 = hxf.ho2(V_shell,hx.tube.d_outer,c_w,'t')
 
+    print(ho, ho2)
+    
     U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
     A_con = hx.convection_area
 
@@ -52,4 +55,3 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
 
     thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e}
     return thermal
-

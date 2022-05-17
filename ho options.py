@@ -5,13 +5,15 @@ def ho(do, tube_number, liquid, d_shell, pitch, baffle_area, A_shell, tube_lengt
     L2 = L1 - 2*L3 - 2*thickness#'length between end baffles' not quite sure how to interpret this
 
     Sw = A_shell - baffle_area #Sw is the free area for flow to go through in the plane of the baffles
+    print(Sw)
     Se = 0 #Se is the leakage area around baffles, assume zero for now
     Sm = d_shell - tube_number * do #maximum free area for flow in cross flow zone
+    print(Sm)
     Sp = d_shell - tube_number * do #minimum free area for flow in cross flow zone
 
     P = ((pitch - do)/pitch * (do/d_shell))
 
-    Gav = 1/3 (m_dot/Sw + m_dot/Sm + m_dot/Sp)
+    Gav = 1/3 * (m_dot/Sw + m_dot/Sm + m_dot/Sp)
 
     R = Re(Gav,do,liquid)
 

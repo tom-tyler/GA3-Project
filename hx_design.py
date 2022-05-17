@@ -64,7 +64,7 @@ while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
     Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
   
     #THERMAL DESIGN
-    thermal = th.thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,hx.F)
+    thermal = th.thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,hx.F,m_c,0.008)
     T_outh,T_outc = thermal['T_outh'], thermal['T_outc']
     rel_e_h1,rel_e_c1 = thermal['rel_e_h1'], thermal['rel_e_c1']
 
