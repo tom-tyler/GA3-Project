@@ -149,3 +149,23 @@ while (abs(per_e_Q) > accuracy) and (abs(per_e_eff) > accuracy):
 
     #now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
     #need to use lmtd and e-ntu approaches
+
+
+def NTU():
+    #ntu approach
+    cmin = min(Cc,Ch)
+    cmax = max(Cc,Ch)
+    qmax = cmin * (T_inh - T_outc) #maximum possible heat tranfer
+    Cr = cmin/cmax #ratio of specific heats 
+    U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
+    A = 0.5 * np.pi*(hx.do * hx.L + hx.di * hx.L) * hx.tube_number #currently uses average of inside and outside area, check
+    NTU = (U * A)/cmin
+    if  hx.co_counter == 'counter':
+        e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
+    if hx.co_counter == 'co':
+        e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
+    else:
+        print('Error, heat exchanger must be counter or co flow') 
+    #may need something about mixed flow here later
+    q = qmax * e
+    return q
