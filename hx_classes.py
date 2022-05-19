@@ -50,7 +50,6 @@ class HX:
                       baffle_type,
                       tube_layout,
                       shell_passes,
-                      tube_passes,
                       nozzle_bore,
                       co_counter='counter',
                       approximate_glue_mass=0
@@ -67,9 +66,6 @@ class HX:
         self.shell_length = shell_length #length of shell
         self.baffle_area = baffle_gap #cross-sectional area of baffle
 
-        self.F = 1 #this is to be changed later
-
-        self.tube_passes = tube_passes #number of tube passes
         self.shell_passes = shell_passes #number of shell passes
 
         self.co_counter = co_counter #counter or co flow. for counter = 'counter', for co = 'co'
@@ -88,7 +84,7 @@ class HX:
         #self.supports = pipe(0, ) need to specify these
         self.plate = sheet(4.5e-3,6.375,self.shell.d_inner,circular = True)
         
-        self.baffle_type = baffle_type #across shell denoted by 'across'. Along shell denoted by 'along', along shell, but axisymmetric denoted by 'axial'
+        self.baffle_type = baffle_type
         
         if baffle_type == 'across_c': #normal case
             r = self.shell.d_inner/2
@@ -103,14 +99,9 @@ class HX:
         elif baffle_type == 'across_a':
             self.baffel_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
 
-        elif baffle_type == 'along':
-            self.baffle_area = 0 #need to do this
-        elif baffle_type == 'axial':
-            self.baffle_area = 0 #need to do this
         else:
             print('specify correct baffle type please')
         self.baffle = sheet(1.5e-3,2.39,self.baffle_area)
-
 
         #derived quantities
         self.shell_end_length = (shell_length-tube_length)/2 #length of plenum
@@ -119,8 +110,17 @@ class HX:
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
         self.sigma_nozzle = self.nozzle_c_area/(self.nozzle_exit_area) #sigma for nozzle
         self.A_shell = self.shell.d_inner*(self.pitch - self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
-        self.convection_area = np.pi*self.tube.d_inner*(self.tube_length - 2*self.plate.thickness)*tube_number # total area of tube surface for convection
+        self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
+        self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
         
+        #axisymmetric dividers
+        if shell_passes > 1:
+            self.divider_no = shell_passes
+        else:
+            self.divider_no = 0
+        self.divider_area = self.tube_length_in_shell*(self.shell.d_inner/2)
+        self.divider = sheet(1.5e-3,2.39,self.divider_area)
+
     def total_mass(self):
         #calculate total mass of heat exchanger
         self.total_nozzle_mass = self.no_nozzles*self.nozzle_mass
@@ -128,6 +128,7 @@ class HX:
         self.total_shell_mass = self.shell.mass
         self.total_baffle_mass = self.baffle_number*self.baffle.mass
         self.total_plate_mass = self.plate_number*self.plate.mass
+        self.total_divider_mass = self.divider_no*self.divider.mass
         #self.total_mass_supports = 
 
-        return self.total_baffle_mass + self.total_tube_mass + self.total_nozzle_mass + self.total_plate_mass + self.total_shell_mass
+        return self.total_baffle_mass + self.total_tube_mass + self.total_nozzle_mass + self.total_plate_mass + self.total_shell_mass + self.total_divider_mass

@@ -3,7 +3,7 @@ from hx_classes import HX,water
 from scipy.optimize import fsolve
 import numpy as np
 
-def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,F,m_c,d_tube):
+def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,m_c,d_tube):
     
     hi = hxf.hi(V_tube,hx.tube.d_inner,h_w)
     ho = hxf.ho1(hx.tube.d_outer, c_w, hx.pitch, hx.baffle_area, hx.A_shell, hx.shell.d_inner, hx.tube_length, hx.baffle_spacing, m_c)
@@ -19,12 +19,17 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
     NTU = (U * A_con)/cmin
-    if  hx.co_counter == 'counter':
-        e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
-    elif hx.co_counter == 'co':
-        e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
-    else:
-        print('Error, heat exchanger must be counter or co flow') 
+    c_root = (1 + Cr**2)**0.5
+    e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
+    ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
+    e = ((ez) - 1) / ((ez) - Cr)
+
+    # if  hx.co_counter == 'counter':
+    #     e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
+    # elif hx.co_counter == 'co':
+    #     e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
+    # else:
+    #     print('Error, heat exchanger must be counter or co flow') 
     #may need something about mixed flow here later
     q_ntu = qmax * e
 
@@ -38,6 +43,8 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     while (abs(rel_e_c) > accuracy) and (abs(rel_e_h) > accuracy):
 
         F = hxf.F(T_inc,T_inh,T_outc,T_outh,hx.shell_passes)
+
+        #might need to think about co/counterflow here for when shell passes > 1
 
         T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*F*hxf.LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
     

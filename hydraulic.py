@@ -10,8 +10,8 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
     m_e_c = 1
 
     #for bore of 25
-    K_hmix = 5.7
-    K_baffles = 0.54
+    K_hmix = 4.9
+    K_baffles = 0.53
 
     #for bore of 20 need to do still
     #K_hmix = 7.0
@@ -60,7 +60,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
         #print(f'm_h: {m_h},dP: {dP_tube_ovr}')
 
         #cold side
-        N = hx.shell_passes*hx.tube_number
+        N = hx.tube_number/hx.shell_passes
 
         dP_shell = K_baffles*hx.baffle_number*hxf.dP_shell(V_shell,c_w,hx.tube.d_outer,N,tube_layout='s')
 

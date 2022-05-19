@@ -201,8 +201,8 @@ def mdot_dP(m_dot,dP_ovr,side,liquid):
         print('please input side correctly')
     
 
-    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate')
-    dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate')
+    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'cubic')
+    dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
 
     dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
     m_dot_new = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
