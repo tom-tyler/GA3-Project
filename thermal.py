@@ -9,7 +9,7 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     ho = hxf.ho1(hx.tube.d_outer, c_w, hx.pitch, hx.baffle_area, hx.A_shell, hx.shell.d_inner, hx.tube_length, hx.baffle_spacing, m_c)
     ho2 = hxf.ho2(V_shell,hx.tube.d_outer,c_w,'t')
 
-    print(ho, ho2)
+    #print(ho, ho2)
     
     U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
     A_con = hx.convection_area
@@ -36,6 +36,8 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
     rel_e_h,rel_e_c = 1,1
 
     while (abs(rel_e_c) > accuracy) and (abs(rel_e_h) > accuracy):
+
+        F = hxf.F(T_inc,T_inh,T_outc,T_outh,hx.shell_passes)
 
         T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*F*hxf.LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
     

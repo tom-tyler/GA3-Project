@@ -1,4 +1,5 @@
 from re import M
+from tkinter import N
 from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
@@ -48,10 +49,10 @@ def ho1(do, liquid, pitch, baffle_area, A_shell, d_shell, tube_length, baffle_sp
     P = ((pitch - do)/pitch * (do/d_shell))
 
     Gav = 1/3 * (m_dot/Sw + m_dot/Sm + m_dot/Sp)
-    print(Gav)
+    #print(Gav)
 
     R = Re(Gav,do,liquid)
-    print(R)
+    #print(R)
 
     S = (Sw / (Sw + Se))
 
@@ -212,3 +213,20 @@ def mdot_dP(m_dot,dP_ovr,side,liquid):
     m_dot = (m_dot + m_dot_new)/2
 
     return m_dot,rel_e_dP,rel_e_mdot
+
+def F(T_inc,T_inh,T_outc,T_outh,shell_passes):
+
+    N = shell_passes
+    #N = number of shell passes. 2M = tube passes per shell
+
+    P = (T_outh - T_inh)/(T_inc - T_inh)
+
+    R = (T_inc - T_outc)/(T_outh - T_inh)
+
+    S = ((R**2 + 1)**0.5)/(R - 1)
+
+    W = ((1-P*R)/(1 - P))**(1/N)
+
+    F = (S*np.log(W))/np.log((1 + W - S + S*W)/(1 + W + S - S*W))
+
+    return F
