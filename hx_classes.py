@@ -131,4 +131,3 @@ class HX:
         #self.total_mass_supports = 
 
         return self.total_baffle_mass + self.total_tube_mass + self.total_nozzle_mass + self.total_plate_mass + self.total_shell_mass
-
