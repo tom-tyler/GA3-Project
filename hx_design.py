@@ -9,12 +9,12 @@ import thermal as th
 
 accuracy = 0.001
 
-hx = HX(tube_number = 13,
-        baffle_number = 14,
-        pitch = 12e-3,
-        tube_length = 362e-3,
-        shell_length = 450e-3,
-        baffle_gap = 13.9e-3,
+hx = HX(tube_number = 8,
+        baffle_number = 12,
+        pitch = 10e-3,
+        tube_length = 261e-3,
+        shell_length = 334e-3,
+        baffle_gap = 16e-3,
         baffle_type = 'across',
         tube_layout='t',
         shell_passes=1,
@@ -24,9 +24,11 @@ hx = HX(tube_number = 13,
 m_h = 0.45 #initial guess for hot mass flow rate
 m_c = 0.50 #initial guess for cold mass flow rate
 
+year = 2017
+
 #specified inlet temperatures
-T_inh = 53.4
-T_inc = 19.7
+T_inh = 53.2
+T_inc = 20.9
 
 #need to sort this. curretly issue is _Liquid needs values above 1 bar
 dP_measured_c = 0
@@ -55,7 +57,7 @@ while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
     c_w = water(T_inc,T_outc,P_inc,P_outc)
 
     #HYDRAULIC DESIGN
-    hydraulic = hyd.hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy)
+    hydraulic = hyd.hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year)
 
     m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']

@@ -1,7 +1,8 @@
 import hx_functions as hxf
 
 
-def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
+
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
 
     m_counter = 0
     dP_e_h = 1
@@ -55,7 +56,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
         dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle + dP_mixing
 
         # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
-        m_h, dP_e_h, m_e_h = hxf.mdot_dP(m_h,dP_tube_ovr,'h',h_w)
+        m_h, dP_e_h, m_e_h = hxf.mdot_dP(m_h,dP_tube_ovr,'h',h_w,year)
       
         #print(f'm_h: {m_h},dP: {dP_tube_ovr}')
 
@@ -69,7 +70,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
         dP_shell_ovr = dP_shell + dP_nozzles_c
 
         #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
-        m_c, dP_e_c, m_e_c = hxf.mdot_dP(m_c,dP_shell_ovr,'c',c_w)
+        m_c, dP_e_c, m_e_c = hxf.mdot_dP(m_c,dP_shell_ovr,'c',c_w,year)
       
         #print(f'm_c: {m_c},dP: {dP_shell_ovr}')
 
