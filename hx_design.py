@@ -9,13 +9,13 @@ import thermal as th
 
 accuracy = 0.001
 
-hx = HX(tube_number = 8,
-        baffle_number = 12,
-        pitch = 10e-3,
-        tube_length = 261e-3,
-        shell_length = 334e-3,
-        baffle_gap = 16e-3,
-        baffle_type = 'across',
+hx = HX(tube_number = 13,
+        baffle_number = 14,
+        pitch = 12e-3,
+        tube_length = 362e-3,
+        shell_length = 450e-3,
+        baffle_gap = 14e-3,
+        baffle_type = 'across_c',
         tube_layout='t',
         shell_passes=1,
         nozzle_bore=25e-3)
@@ -24,11 +24,11 @@ hx = HX(tube_number = 8,
 m_h = 0.45 #initial guess for hot mass flow rate
 m_c = 0.50 #initial guess for cold mass flow rate
 
-year = 2017
+year = 2022
 
 #specified inlet temperatures
-T_inh = 53.2
-T_inc = 20.9
+T_inh = 53.4
+T_inc = 19.7
 
 #need to sort this. curretly issue is _Liquid needs values above 1 bar
 dP_measured_c = 0

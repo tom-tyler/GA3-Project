@@ -34,6 +34,29 @@ def hi(V_tube,di,liquid):
 
     return hi
 
+def ho_ideal(Sm, a1, a2, a3, a4, m_c, pitch, d_outer, liquid):
+    #ideal calculation
+    G = m_c / Sm
+    a = a3 / (1 + 0.14 * ((d_outer * G)/liquid.mu)**a4)
+    j = a1 * (1.33 /(pitch/d_outer))**a * ((d_outer * G)/liquid.mu)**a2 #dimensionless quanitity
+    phi = 1 #viscosity correction factor
+    ho_ideal = j * liquid.cp * G * phi / liquid.Pr**(2/3)
+    return ho_ideal
+
+def ho(Sm,Sb, a1, a2, a3, a4, m_c, pitch, d_outer, liquid): # bell delaware method
+    #rs = Ssb / (Ssb + Stb)
+    #rl = (Ssb + Stb) / Sm
+
+    #correction factors
+    Jc = 1                          #0.55 + 0.72 * Fc correction factor for baffle window flow
+    Jl = 1                          #0.44 * (1- rs) + (1 - 0.44 * (1 -rs))*np.exp(-2.2 * rl) correction factor for baffle leakage effects
+    Jb = np.exp(-1.35 * (Sb/Sm))    #correction factor for bundle bypass effects
+    Jr = 1                          #laminar flow correction factor
+    Js = 1                          #correction factor for unequal baffle spacing
+
+    ho = ho_ideal(Sm, a1, a2, a3, a4, m_c, pitch, d_outer, liquid) * Jc * Jl * Jb * Jr * Js
+    return ho
+
 def ho1(do, liquid, pitch, baffle_area, A_shell, d_shell, tube_length, baffle_spacing, m_dot):
     #relation from https://reader.elsevier.com/reader/sd/pii/0017931063900371?token=67FD7B1EA2E8B9D710BA94CFEC6DA5F06A07655CAAFAFD0A8CC482CCE90F3D4CC6E9878A64AE9F808EAC4F0844192201&originRegion=eu-west-1&originCreation=20220517160904
     L1 = tube_length  #distance between end plates, not quite 
@@ -116,7 +139,35 @@ def dP_nozzle(V,liquid):
     dP = 0.5*liquid.rho*(V**2)
     return dP
 
-def dP_shell(V,liquid,do,N,tube_layout):
+def dP_shell(liquid, Ncw, Sb, Sm, Sw, Nc, m_c, baffle_number, b1, b2, b3, b4, d_outer, pitch):
+
+    Rs = 1 #uniform baffle spacing
+    Rb = np.exp(-3.7*(Sb/Sm))
+    print(Rb)
+    Rl = 1 #assume no leakage
+    nb = baffle_number
+
+    dPi = dP_ideal(Sm, m_c, b1, b2, b3, b4, d_outer, liquid, pitch, Nc)
+    dPw = dPw_ideal(Ncw, m_c, liquid, Sm, Sw)
+
+    dP = ((nb -1)*dPi*Rb + nb*dPw)*Rl + 2*dPi*(1 + Ncw/Nc)*Rb*Rs
+
+    return dP
+
+def dPw_ideal(Ncw, m_c, liquid, Sm, Sw):
+    dpw_ideal = ((2 + 0.6 * Ncw) * m_c**2) / (2 * 1 * liquid.rho * Sm * Sw)
+    return dpw_ideal
+
+def dP_ideal(Sm, m_c, b1, b2, b3, b4, d_outer, liquid, pitch, Nc):
+    #ideal pressure drop
+    G = m_c/Sm
+    b = b3 / (1 + 0.14 * ((d_outer * G)/liquid.mu)**b4)
+    phi = 1
+    f = b1 * (1.33/(pitch/d_outer))**b * ((d_outer * G)/liquid.mu)**b2
+    dP_ideal = (2 * f * Nc * G**2)/(1 * liquid.rho * phi)
+    return dP_ideal
+
+def dP_shell_0(V,liquid,do,N,tube_layout):
 
     Re_shell = Re(V,do,liquid)
 

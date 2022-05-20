@@ -64,7 +64,7 @@ class HX:
         self.pitch = pitch #pitch between tubes
         self.tube_length = tube_length #length of copper tubes carrying fluid
         self.shell_length = shell_length #length of shell
-        self.baffle_area = baffle_gap #cross-sectional area of baffle
+        self.baffle_gap = baffle_gap #baffle gap
 
         self.shell_passes = shell_passes #number of shell passes
 
@@ -97,7 +97,7 @@ class HX:
             self.baffle_area = np.mean(self.baffle_area_disk,self.baffle_area_doughnut)
         
         elif baffle_type == 'across_a':
-            self.baffel_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
+            self.baffle_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
 
         else:
             print('specify correct baffle type please')
@@ -112,6 +112,7 @@ class HX:
         self.A_shell = self.shell.d_inner*(self.pitch - self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
         self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
         self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
+        self.d_otl = 4 * self.pitch
         
         #axisymmetric dividers
         if shell_passes > 1:
@@ -120,6 +121,34 @@ class HX:
             self.divider_no = 0
         self.divider_area = self.tube_length_in_shell*(self.shell.d_inner/2)
         self.divider = sheet(1.5e-3,2.39,self.divider_area)
+
+        #bell delaware coefficients
+        if self.tube_layout == 't':
+            self.a1 = 0.321 
+            self.a2 = -0.388
+            self.a3 = 1.450
+            self.a4 = 0.519
+            self.theta = 30
+            self.b1 = 0.372
+            self.b2 = -0.123
+            self.b3 = 7
+            self.b4 = 0.5
+        if self.tube_layout == 's':
+            self.theta = 0
+            self.b1 = 0.0815
+            self.b2 = 0.022
+            self.b3 = 6.30
+            self.b4 = 0.378
+
+        #effective areas
+        self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/self.pitch)
+        self.Swg = (1/4) * np.pi * self.shell.d_inner**2 - self.baffle_area 
+        self.Sw = self.Swg #- N * (Swg/((1/4) * np.pi * d_shell **2)) * d_outer**2 * np.pi * 0.25
+        self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl)
+        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_gap/self.shell.d_inner) / (pitch * np.cos(self.theta))
+        self.Ncw = (0.8 * self.baffle_gap * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
+        
+
 
     def total_mass(self):
         #calculate total mass of heat exchanger
