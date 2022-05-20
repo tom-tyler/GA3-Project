@@ -63,8 +63,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         #cold side
         N = hx.tube_number/hx.shell_passes
 
-        dP_shell = hxf.dP_shell(c_w,hx.tube.d_outer,N,hx.tube_layout,hx.shell.d_inner, hx.pitch, hx.baffle_spacing, hx.d_otl, m_c, hx.baffle_gap, hx.baffle_number, hx.baffle_area)
-        print(dP_shell)
+        dP_shell = hxf.dP_shell(c_w, hx.Ncw, hx.Sb, hx.Sm, hx.Sw, hx.Nc, m_c, hx.baffle_number, hx.b1, hx.b2, hx.b3, hx.b4, hx.tube.d_outer, hx.pitch)
         dP_nozzles_c = 2 * hxf.dP_nozzle(V_nozzle_c,c_w)
 
         dP_shell_ovr = dP_shell + dP_nozzles_c
