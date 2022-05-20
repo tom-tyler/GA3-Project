@@ -10,14 +10,6 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
     dP_e_c = 1
     m_e_c = 1
 
-    #for bore of 25
-    K_hmix = 4.9
-    K_baffles = 0.53
-
-    #for bore of 20 need to do still
-    #K_hmix = 7.0
-    #K_baffles = 0.49
-
     while (abs(dP_e_h) > accuracy) and (abs(m_e_h) > accuracy) and (abs(dP_e_c) > accuracy) and (abs(m_e_c) > accuracy):
 
         #heat capacities
@@ -50,7 +42,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         dP_nozzles_h = 2 * hxf.dP_nozzle(V_nozzle_h,h_w)
 
         #mixing loss
-        dP_mixing = K_hmix*h_w.rho*((V_nozzle_h+V_tube)/2)**2
+        dP_mixing = h_w.rho*((V_nozzle_h+V_tube)/2)**2
 
         #overall pressure drop
         dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle + dP_mixing

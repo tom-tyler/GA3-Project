@@ -1,5 +1,4 @@
 import hx_functions as hxf
-from hx_classes import HX,water
 from scipy.optimize import fsolve
 import numpy as np
 
@@ -60,5 +59,5 @@ def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T
             print('exceeded max iterations for T')
             break
 
-    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e}
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
     return thermal

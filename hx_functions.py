@@ -5,6 +5,90 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+#HYDRAULIC DESIGN
+
+def dP_tube_drop(L,di,liquid,V):
+
+    f = friction_factor(Re(V,di,liquid))
+
+    dP = f*(L/di)*0.5*liquid.rho*V**2
+    return dP
+
+
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
+
+    m_counter = 0
+    dP_e_h = 1
+    m_e_h = 1
+    dP_e_c = 1
+    m_e_c = 1
+
+    while (abs(dP_e_h) > accuracy) and (abs(m_e_h) > accuracy) and (abs(dP_e_c) > accuracy) and (abs(m_e_c) > accuracy):
+
+        #heat capacities
+        Cc = m_c*c_w.cp
+        Ch = m_h*h_w.cp
+
+        #mass flow in one tube
+        m_tube = m_h/hx.tube_number
+
+        #various velocities needed
+        V_tube = V(m_tube,h_w,hx.tube.c_area)
+        V_nozzle_h = V(m_h,h_w,hx.nozzle_c_area)
+        V_shell = V(m_c,c_w,hx.A_shell)
+        V_nozzle_c = V(m_c,c_w,hx.nozzle_c_area)
+
+        #sigma, used to find ke and kc
+        sigma = hx.sigma
+        sigma_nozzle = hx.sigma_nozzle
+    
+        #pressure drop in a single tube
+        dP_tube = dP_tube_drop(hx.tube_length,hx.tube.d_inner,h_w,V_tube)
+
+        #pressure drop due to separation leaving tubes
+        dP_in_plus_out = dP_inout(h_w,V_tube,sigma)
+
+        #pressure drop due to separation leaving nozzle
+        dP_in_plus_out_nozzle = dP_inout(h_w,V_nozzle_h,sigma_nozzle)
+
+        #head loss in nozzle
+        dP_nozzles_h = 2 * dP_nozzle(V_nozzle_h,h_w)
+
+        #mixing loss
+        dP_mixing = h_w.rho*((V_nozzle_h+V_tube)/2)**2
+
+        #overall pressure drop
+        dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle + dP_mixing
+
+        # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
+        m_h, dP_e_h, m_e_h = mdot_dP(m_h,dP_tube_ovr,'h',h_w,year)
+      
+        #print(f'm_h: {m_h},dP: {dP_tube_ovr}')
+
+        #cold side
+        N = hx.tube_number/hx.shell_passes
+
+        dP_shell = dP_shell_drop(c_w, hx, m_c)
+        dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
+
+        dP_shell_ovr = dP_shell + dP_nozzles_c
+
+        #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
+        m_c, dP_e_c, m_e_c = mdot_dP(m_c,dP_shell_ovr,'c',c_w,year)
+      
+        #print(f'm_c: {m_c},dP: {dP_shell_ovr}')
+
+        m_counter += 1
+        if m_counter > 100:
+                print('exceeded max iterations for m,dP')
+                break
+
+    hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
+    return hydraulic
+
+
+
+
 def friction_factor(Re, eD=0):
     A = eD/3.7+(6.7/Re)**0.9
     fo = 1/(-2*np.log10(eD/3.7-5.02/Re*np.log10(A)))**2
@@ -33,6 +117,89 @@ def hi(V_tube,di,liquid):
     hi = Nu*liquid.k/di
 
     return hi
+
+def LMTD(T_1in,T_2in,T_1out,T_2out):
+    lmtd = ((T_2in - T_1out) - (T_2out - T_1in)) / np.log((T_2in - T_1out) / (T_2out - T_1in))
+    return lmtd
+
+def U_inside(hi,ho,di,do,L,k_copper = 398):
+
+    ro = do/2
+    ri = di/2
+    Ao = np.pi*do*L
+    Ai = np.pi*di*L
+
+    inv_U = 1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho)
+    
+    return 1/inv_U
+
+
+
+def dP_inout(liquid,V,sigma):
+
+    Kc,Ke = KcKe(sigma)
+
+    dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
+
+    return dP
+
+def dP_nozzle(V,liquid):
+    dP = 0.5*liquid.rho*(V**2)
+    return dP
+
+def dP_shell_drop(liquid, m_c, hx):
+
+    Rs = 1 #uniform baffle spacing
+    Rb = np.exp(-3.7*(hx.Sb/hx.Sm))
+    Rl = 1 #assume no leakage
+    nb = hx.baffle_number
+
+    dPi = dP_ideal(m_c, liquid, hx)
+    dPw = dPw_ideal(m_c, liquid, hx)
+
+    dP = ((nb -1)*dPi*Rb + nb*dPw)*Rl + 2*dPi*(1 + hx.Ncw/hx.Nc)*Rb*Rs
+
+    return dP
+
+
+
+def dPw_ideal(m_c, liquid, hx):
+    dpw_ideal = ((2 + 0.6 * hx.Ncw) * m_c**2) / (2 * 1 * liquid.rho * hx.Sm * hx.Sw)
+    return dpw_ideal
+
+
+
+
+def dP_ideal(m_c, liquid, hx):
+    #ideal pressure drop
+    G = m_c/hx.Sm
+    b = hx.b3 / (1 + 0.14 * ((hx.tube.d_outer * G)/liquid.mu)**hx.b4)
+    phi = 1
+    f = hx.b1 * (1.33/(hx.pitch/hx.tube.d_outer))**b * ((hx.tube.d_outer * G)/liquid.mu)**hx.b2
+    dP_ideal = (2 * f * hx.Nc * G**2)/(1 * liquid.rho * phi)
+    return dP_ideal
+
+
+
+
+def dP_shell_0(V,liquid,do,N,tube_layout):
+
+    Re_shell = Re(V,do,liquid)
+
+    if tube_layout == 't':
+        a = 0.2
+    elif tube_layout == 's':
+        a = 0.34
+    else:
+        a = 0.2
+        print('error, invalid tube layout')
+
+    dP = 4*a*Re_shell**(-0.15)*N*liquid.rho*(V**2)
+
+    return dP
+
+
+
 
 def ho_ideal(Sm, a1, a2, a3, a4, m_c, pitch, d_outer, liquid):
     #ideal calculation
@@ -105,83 +272,67 @@ def ho2(V_shell,do,liquid,tube_layout): #handout relation
 
     return ho
 
-def LMTD(T_1in,T_2in,T_1out,T_2out):
-    lmtd = ((T_2in - T_1out) - (T_2out - T_1in)) / np.log((T_2in - T_1out) / (T_2out - T_1in))
-    return lmtd
 
-def U_inside(hi,ho,di,do,L,k_copper = 398):
 
-    ro = do/2
-    ri = di/2
-    Ao = np.pi*do*L
-    Ai = np.pi*di*L
-
-    inv_U = 1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho)
+def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,m_c,d_tube):
     
-    return 1/inv_U
+    hi = hi(V_tube,hx.tube.d_inner,h_w)
+    ho = ho(hx.Sm,hx.Sb, hx.a1, hx.a2, hx.a3, hx.a4, m_c, hx.pitch, hx.tube.d_outer, c_w)
+    #ho2 = ho2(V_shell,hx.tube.d_outer,c_w,'t')
+    
+    U = U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
+    A_con = hx.convection_area
 
-def dP_tube(L,di,liquid,V):
+    cmin = min(Cc,Ch)
+    cmax = max(Cc,Ch)
+    qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
+    Cr = cmin/cmax #ratio of specific heats 
+    NTU = (U * A_con)/cmin
+    c_root = (1 + Cr**2)**0.5
+    e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
+    ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
+    e = ((ez) - 1) / ((ez) - Cr)
 
-    f = friction_factor(Re(V,di,liquid))
+    # if  hx.co_counter == 'counter':
+    #     e = (1 - np.exp(-NTU * (1 + Cr)))/(1 + Cr) #equations from wiki, check
+    # elif hx.co_counter == 'co':
+    #     e = (1 - np.exp(-NTU * (1 - Cr)))/(1 - Cr * np.exp(-NTU * (1 - Cr)))
+    # else:
+    #     print('Error, heat exchanger must be counter or co flow') 
+    #may need something about mixed flow here later
+    q_ntu = qmax * e
 
-    dP = f*(L/di)*0.5*liquid.rho*V**2
-    return dP
 
-def dP_inout(liquid,V,sigma):
+    #now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
 
-    Kc,Ke = KcKe(sigma)
+    T_outc_new,T_outh_new = 1,1
+    T_counter = 0
+    rel_e_h,rel_e_c = 1,1
 
-    dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
+    while (abs(rel_e_c) > accuracy) and (abs(rel_e_h) > accuracy):
 
-    return dP
+        F = F(T_inc,T_inh,T_outc,T_outh,hx.shell_passes)
 
-def dP_nozzle(V,liquid):
-    dP = 0.5*liquid.rho*(V**2)
-    return dP
+        #might need to think about co/counterflow here for when shell passes > 1
 
-def dP_shell(liquid, Ncw, Sb, Sm, Sw, Nc, m_c, baffle_number, b1, b2, b3, b4, d_outer, pitch):
+        T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*F*LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
+    
+        T_outh_new = fsolve(lambda T_outh: (T_inh - T_outh) - (1/Ch)*A_con*U*F*LMTD(T_inc,T_inh,T_outc,T_outh), T_outh)[0]
+        if T_counter == 0:
+            rel_e_c1 = (T_outc_new - T_outc)/T_outc
+            rel_e_h1 = (T_outh_new - T_outh)/T_outh
+        rel_e_c = (T_outc_new - T_outc)/T_outc
+        rel_e_h = (T_outh_new - T_outh)/T_outh
+        T_outc = T_outc_new
+        T_outh = T_outh_new
+        T_counter += 1
 
-    Rs = 1 #uniform baffle spacing
-    Rb = np.exp(-3.7*(Sb/Sm))
-    print(Rb)
-    Rl = 1 #assume no leakage
-    nb = baffle_number
+        if T_counter > 100:
+            print('exceeded max iterations for T')
+            break
 
-    dPi = dP_ideal(Sm, m_c, b1, b2, b3, b4, d_outer, liquid, pitch, Nc)
-    dPw = dPw_ideal(Ncw, m_c, liquid, Sm, Sw)
-
-    dP = ((nb -1)*dPi*Rb + nb*dPw)*Rl + 2*dPi*(1 + Ncw/Nc)*Rb*Rs
-
-    return dP
-
-def dPw_ideal(Ncw, m_c, liquid, Sm, Sw):
-    dpw_ideal = ((2 + 0.6 * Ncw) * m_c**2) / (2 * 1 * liquid.rho * Sm * Sw)
-    return dpw_ideal
-
-def dP_ideal(Sm, m_c, b1, b2, b3, b4, d_outer, liquid, pitch, Nc):
-    #ideal pressure drop
-    G = m_c/Sm
-    b = b3 / (1 + 0.14 * ((d_outer * G)/liquid.mu)**b4)
-    phi = 1
-    f = b1 * (1.33/(pitch/d_outer))**b * ((d_outer * G)/liquid.mu)**b2
-    dP_ideal = (2 * f * Nc * G**2)/(1 * liquid.rho * phi)
-    return dP_ideal
-
-def dP_shell_0(V,liquid,do,N,tube_layout):
-
-    Re_shell = Re(V,do,liquid)
-
-    if tube_layout == 't':
-        a = 0.2
-    elif tube_layout == 's':
-        a = 0.34
-    else:
-        a = 0.2
-        print('error, invalid tube layout')
-
-    dP = 4*a*Re_shell**(-0.15)*N*liquid.rho*(V**2)
-
-    return dP
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
+    return thermal
 
 def Q_c(Cc,T_outc,T_inc):
     Q = Cc*(T_outc - T_inc)
