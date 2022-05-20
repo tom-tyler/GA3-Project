@@ -64,7 +64,7 @@ class HX:
         self.pitch = pitch #pitch between tubes
         self.tube_length = tube_length #length of copper tubes carrying fluid
         self.shell_length = shell_length #length of shell
-        self.baffle_area = baffle_gap #cross-sectional area of baffle
+        self.baffle_gap = baffle_gap #baffle gap
 
         self.shell_passes = shell_passes #number of shell passes
 
@@ -97,7 +97,7 @@ class HX:
             self.baffle_area = np.mean(self.baffle_area_disk,self.baffle_area_doughnut)
         
         elif baffle_type == 'across_a':
-            self.baffel_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
+            self.baffle_area = self.shell.c_area - self.tube_number*(self.tube.d_outer + baffle_gap)**2*np.pi/4
 
         else:
             print('specify correct baffle type please')
@@ -112,6 +112,7 @@ class HX:
         self.A_shell = self.shell.d_inner*(self.pitch - self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
         self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
         self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
+        self.d_otl = 4 * self.tube.d_outer + 4 * self.pitch
         
         #axisymmetric dividers
         if shell_passes > 1:
