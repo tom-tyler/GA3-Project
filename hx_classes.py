@@ -112,7 +112,7 @@ class HX:
         self.A_shell = self.shell.d_inner*(self.pitch - self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
         self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
         self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
-        self.d_otl = 4 * self.tube.d_outer + 4 * self.pitch
+        self.d_otl = 4 * self.pitch
         
         #axisymmetric dividers
         if shell_passes > 1:

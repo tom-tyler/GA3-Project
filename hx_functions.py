@@ -143,6 +143,7 @@ def dP_shell(liquid, Ncw, Sb, Sm, Sw, Nc, m_c, baffle_number, b1, b2, b3, b4, d_
 
     Rs = 1 #uniform baffle spacing
     Rb = np.exp(-3.7*(Sb/Sm))
+    print(Rb)
     Rl = 1 #assume no leakage
     nb = baffle_number
 
