@@ -210,13 +210,13 @@ def ho_ideal(Sm, a1, a2, a3, a4, m_c, pitch, d_outer, liquid):
     ho_ideal = j * liquid.cp * G * phi / liquid.Pr**(2/3)
     return ho_ideal
 
-def ho(Sm,Sb, a1, a2, a3, a4, m_c, pitch, d_outer, liquid): # bell delaware method
-    #rs = Ssb / (Ssb + Stb)
-    #rl = (Ssb + Stb) / Sm
+def ho(Sm,Sb, a1, a2, a3, a4, m_c, pitch, d_outer, liquid, Ssb, Stb): # bell delaware method
+    rs = Ssb / (Ssb + Stb)
+    rl = (Ssb + Stb) / Sm
 
     #correction factors
     Jc = 1                          #0.55 + 0.72 * Fc correction factor for baffle window flow
-    Jl = 1                          #0.44 * (1- rs) + (1 - 0.44 * (1 -rs))*np.exp(-2.2 * rl) correction factor for baffle leakage effects
+    Jl = 0.44 * (1- rs) + (1 - 0.44 * (1 -rs))*np.exp(-2.2 * rl) #correction factor for baffle leakage effects
     Jb = np.exp(-1.35 * (Sb/Sm))    #correction factor for bundle bypass effects
     Jr = 1                          #laminar flow correction factor
     Js = 1                          #correction factor for unequal baffle spacing

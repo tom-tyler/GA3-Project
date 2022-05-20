@@ -147,8 +147,14 @@ class HX:
         self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl)
         self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_gap/self.shell.d_inner) / (pitch * np.cos(self.theta))
         self.Ncw = (0.8 * self.baffle_gap * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
-        
 
+        #clearances
+        self.delta_tb = 0.4e-3
+        self.delta_sb = 0.8 + 0.002 * self.shell.d_inner
+
+        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5 * np.arccos((self.shell.d_inner - self.baffle_gap)/self.shell.d_inner))
+        self.Stb = 0.5 * np.pi * self.tube.d_outer * self.delta_tb * self.tube_number 
+    
 
     def total_mass(self):
         #calculate total mass of heat exchanger
