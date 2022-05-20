@@ -34,6 +34,40 @@ def hi(V_tube,di,liquid):
 
     return hi
 
+def ho(Cc, m_c, pitch, d_outer, liquid, baffle_spacing, d_shell, d_otl): # bell delaware method
+
+    #from correlations at https://reader.elsevier.com/reader/sd/pii/B9780123735881500097?token=5F15AE11E5C1F5036E719B79796AE27989BCE35E4CC9A873B8C8DF9B21C28E1F52DA6116E24B9C5E327EBC98518B8F9D&originRegion=eu-west-1&originCreation=20220519125049
+    a1 = 0.321 
+    a2 = -0.388
+    a3 = 1.450
+    a4 = 0.519
+    #for 30 degree layout, i.e. triangular
+
+    #areas
+    Sm = baffle_spacing * ((d_shell - d_otl) + ((d_otl - d_outer)*(pitch - d_outer))/pitch) #incorporate number of passes???
+    Sb = baffle_spacing * (d_shell - d_otl)
+    #Ssb = 0
+    #Stb = 0
+
+    G = m_c / Sm
+    a = a3 / (1 + 0.14 * ((d_outer * G)/liquid.mu)**a4)
+    j = a1 * (1.33 /(pitch/d_outer))**a * ((d_outer * G)/liquid.mu)**a2 #dimensionless quanitity
+    phi = 1 #viscosity correction factor
+
+    ho_ideal = j * liquid.cp * G * phi / liquid.Pr**(2/3)
+    
+    #rs = Ssb / (Ssb + Stb)
+    #rl = (Ssb + Stb) / Sm
+
+    Jc = 1#0.55 + 0.72 * Fc #correction factor for baffle window flow
+    Jl = 1#0.44 * (1- rs) + (1 - 0.44 * (1 -rs))*np.exp(-2.2 * rl) #correction factor for baffle leakage effects
+    Jb = np.exp(-1.35 * (Sb/Sm)) #correction factor for bundle bypass effects
+    Jr = 1 #laminar flow correction factor
+    Js = 1 #correction factor for unequal baffle spacing
+
+    ho = ho_ideal * Jc * Jl * Jb * Jr * Js
+    return ho
+
 def ho1(do, liquid, pitch, baffle_area, A_shell, d_shell, tube_length, baffle_spacing, m_dot):
     #relation from https://reader.elsevier.com/reader/sd/pii/0017931063900371?token=67FD7B1EA2E8B9D710BA94CFEC6DA5F06A07655CAAFAFD0A8CC482CCE90F3D4CC6E9878A64AE9F808EAC4F0844192201&originRegion=eu-west-1&originCreation=20220517160904
     L1 = tube_length  #distance between end plates, not quite 
@@ -116,7 +150,49 @@ def dP_nozzle(V,liquid):
     dP = 0.5*liquid.rho*(V**2)
     return dP
 
-def dP_shell(V,liquid,do,N,tube_layout):
+def dP_shell(liquid,d_outer,N,tube_layout,d_shell, pitch, baffle_spacing, d_otl, m_c, baffle_cut, baffle_number, baffle_area):
+
+    if tube_layout == 't':
+        theta = 30
+        b1 = 0.372
+        b2 = -0.123
+        b3 = 7
+        b4 = 0.5
+    if tube_layout == 's':
+        theta = 0
+        b1 = 0.0815
+        b2 = 0.022
+        b3 = 6.30
+        b4 = 0.378
+
+    Sm = baffle_spacing * ((d_shell - d_otl) + ((d_otl - d_outer)*(pitch - d_outer))/pitch)
+    Swg = (1/4) * np.pi * d_shell **2 - baffle_area 
+    Sw = Swg #- N * (Swg/((1/4) * np.pi * d_shell **2)) * d_outer**2 * np.pi * 0.25
+    Sb = baffle_spacing * (d_shell - d_otl)
+
+    #ideal pressure drop
+    G = m_c/Sm
+    b = b3 / (1 + 0.14 * ((d_outer * G)/liquid.mu)**b4)
+    Nc = d_shell * (1 - 2 * baffle_cut) / (pitch * np.cos(theta))
+    phi = 1
+    f = b1 * (1.33/(pitch/d_outer))**b * ((d_outer * G)/liquid.mu)**b2
+    dp_ideal = (2 * f * Nc * G**2)/(1 * liquid.rho * phi)
+    print(dp_ideal)
+
+    Rs = 1 #uniform baffle spacing
+    Rb = np.exp(-3.7*(Sb/Sm))
+    Rl = 1 #assume no leakage
+    nb = baffle_number
+    Ncw = (0.8 * baffle_cut * d_shell) / (pitch * np.cos(theta))
+
+    dpw_ideal = ((2 + 0.6 * Ncw) * m_c**2) / (2 * 1 * liquid.rho * Sm * Sw)
+    print(dpw_ideal)
+
+    dP = ((nb -1)*dp_ideal*Rb + nb*dpw_ideal)*Rl + 2*dp_ideal*(1 + Ncw/Nc)*Rb*Rs
+
+    return dP
+
+def dP_shell_0(V,liquid,do,N,tube_layout):
 
     Re_shell = Re(V,do,liquid)
 
