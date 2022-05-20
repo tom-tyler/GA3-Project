@@ -6,7 +6,7 @@ import numpy as np
 def thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,m_c,d_tube):
     
     hi = hxf.hi(V_tube,hx.tube.d_inner,h_w)
-    ho = hxf.ho(hx.Sm,hx.Sb, hx.a1, hx.a2, hx.a3, hx.a4, m_c, hx.pitch, hx.tube.d_outer, c_w)
+    ho = hxf.ho(hx.Sm,hx.Sb, hx.a1, hx.a2, hx.a3, hx.a4, m_c, hx.pitch, hx.tube.d_outer, c_w, hx.Ssb, hx.Stb)
     #ho2 = hxf.ho2(V_shell,hx.tube.d_outer,c_w,'t')
     
     U = hxf.U_inside(hi,ho,hx.tube.d_inner,hx.tube.d_outer,hx.tube_length)
