@@ -17,31 +17,27 @@ hx = HX(tube_number = 13,
         baffle_type = 'across_c',
         tube_layout='t',
         shell_passes=1,
-        nozzle_bore=20e-3)
+        nozzle_bore=20e-3,
+        crossflow_tube_fraction = 1,
+        bypass_area_fraction = 0,
+        seal_strips = 0,
+        crossflow_rows = 4.5)
 
-#initial values:
-m_h = 0.45 #initial guess for hot mass flow rate
-m_c = 0.50 #initial guess for cold mass flow rate
-
+#pump characteristic
 year = 2022
 
 #specified inlet temperatures
 T_inh = 53.4
 T_inc = 19.7
 
-#need to sort this. curretly issue is _Liquid needs values above 1 bar
-dP_measured_c = 0
-dP_measured_h = 0
+
+#initial guesses for mass flowrate:
+m_h = 0.45 #initial guess for hot mass flow rate
+m_c = 0.50 #initial guess for cold mass flow rate
 
 #initial guesses for outlet temperatures
 T_outh = 48
 T_outc = 22
-
-#initial guesses for inlet and outlet pressures
-P_inh = 1.01325e5
-P_outh = 1.01325e5 - dP_measured_h
-P_inc = 1.01325e5
-P_outc = 1.01325e5 - dP_measured_c
 
 #initial heat transfer parameters
 heat_transfer,eff = 1,1
@@ -49,22 +45,23 @@ heat_transfer_new,eff_new = 1,1
 Q_counter = 0
 rel_e_h1,rel_e_c1 = 1,1
 
+
 while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
 
     #creating hot and cold water objects
-    h_w = water(T_inh,T_outh,P_inh,P_outh)
-    c_w = water(T_inc,T_outc,P_inc,P_outc)
+    h_w = water(T_inh,T_outh)
+    c_w = water(T_inc,T_outc)
 
     #HYDRAULIC DESIGN
+    print('hdesign: ',hx)
     hydraulic = hxf.hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year)
 
     m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
-    V_tube, V_shell = hydraulic['V_tube'], hydraulic['V_shell']
     Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
   
     #THERMAL DESIGN
-    thermal = hxf.thermal_design(Ch,Cc,V_tube,V_shell,hx,h_w,c_w,accuracy,T_inh,T_inc,T_outh,T_outc,m_c,0.008)
+    thermal = hxf.thermal_design(m_h,m_c,h_w,c_w,hx,accuracy,T_inh,T_inc,T_outh,T_outc)
     T_outh,T_outc = thermal['T_outh'], thermal['T_outc']
     rel_e_h1,rel_e_c1 = thermal['rel_e_h1'], thermal['rel_e_c1']
 

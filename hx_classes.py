@@ -3,7 +3,7 @@ from iapws._iapws import _Liquid
 import hx_functions as hxf
 
 class water:
-    def __init__(self,Tin,Tout,Pin,Pout):
+    def __init__(self,Tin,Tout,Pin = 1e5, Pout = 1e5):
         self.Tin = Tin
         self.Tout = Tout
         self.Pin = Pin
@@ -51,6 +51,10 @@ class HX:
                       tube_layout,
                       shell_passes,
                       nozzle_bore,
+                      crossflow_tube_fraction,
+                      bypass_area_fraction,
+                      seal_strips,
+                      crossflow_rows,
                       co_counter='counter',
                       approximate_glue_mass=0
                       ):
@@ -60,7 +64,11 @@ class HX:
         self.baffle_number = baffle_number #number of baffles
 
         self.tube_layout = tube_layout #if tubes laid out in a triangular fashion, tube_layout = 't', if laid out in square fashion, tube_layout = 's'
-        
+        self.crossflow_tube_fraction = crossflow_tube_fraction #fraction of tubes which are between baffle tips and not in the window
+        self.bypass_area_fraction = bypass_area_fraction #Fraction of the crossflow area which is not blocked by a baffle or anything else and available for bypassing,
+        self.seal_strips = seal_strips #Number of seal strips per side of a baffle added to prevent bypassing
+        self.crossflow_rows = crossflow_rows #The number of tube rows in the crossflow of the baffle
+
         self.pitch = pitch #pitch between tubes
         self.tube_length = tube_length #length of copper tubes carrying fluid
         self.shell_length = shell_length #length of shell
@@ -112,7 +120,9 @@ class HX:
         self.A_shell = self.shell.d_inner*(self.pitch - self.tube.d_outer)*self.baffle_spacing/self.pitch #area through which shell fluid can flow
         self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
         self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
-        self.d_otl = 4 * self.pitch
+        self.baffle_cut = self.baffle_gap/self.shell.d_inner
+        self.d_otl = self.shell.d_inner - self.pitch
+        self.D_ctl = self.d_otl - self.tube.d_outer
         
         #axisymmetric dividers
         if shell_passes > 1:
@@ -133,27 +143,36 @@ class HX:
             self.b2 = -0.123
             self.b3 = 7
             self.b4 = 0.5
-        if self.tube_layout == 's':
+        elif self.tube_layout == 's':
             self.theta = 0
             self.b1 = 0.0815
             self.b2 = 0.022
             self.b3 = 6.30
             self.b4 = 0.378
 
+        theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)
+        theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))
+        Fw = (1/(2*np.pi))*(theta_ctl - np.sin(theta_ctl))
+        Fc = 1 - 2*Fw
+        A_tubes = self.tube_number * Fw * (np.pi*self.tube.d_outer**2/4)
+
         #effective areas
         self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/self.pitch)
-        self.Swg = (1/4) * np.pi * self.shell.d_inner**2 - self.baffle_area 
-        self.Sw = self.Swg #- N * (Swg/((1/4) * np.pi * d_shell **2)) * d_outer**2 * np.pi * 0.25
+        self.Swg = (1/8) * self.shell.d_inner**2 * (theta_ds - np.sin(theta_ds)) 
+        self.Sw = self.Swg - A_tubes
         self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl)
-        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_gap/self.shell.d_inner) / (pitch * np.cos(self.theta))
-        self.Ncw = (0.8 * self.baffle_gap * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
+        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_cut) / (pitch * np.cos(self.theta))
+        self.Ncw = (0.8 * self.baffle_cut * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
 
         #clearances
         self.delta_tb = 0.4e-3
-        self.delta_sb = 0.8 + 0.002 * self.shell.d_inner
+        self.delta_sb = 0.8e-3 + 0.002 * self.shell.d_inner
 
-        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5 * np.arccos((self.shell.d_inner - self.baffle_gap)/self.shell.d_inner))
-        self.Stb = 0.5 * np.pi * self.tube.d_outer * self.delta_tb * self.tube_number 
+        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*theta_ds)
+        self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+Fc)
+
+        self.rs = self.Ssb / (self.Ssb + self.Stb)
+        self.rl = (self.Ssb + self.Stb) / self.Sm
     
 
     def total_mass(self):
