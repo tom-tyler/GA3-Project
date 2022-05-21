@@ -58,6 +58,7 @@ class HX:
                       seal_strips,
                       crossflow_rows,
                       tube_bundle_diameter,
+                      tube_passes,
                       co_counter='counter',
                       approximate_glue_mass=0
                       ):
@@ -78,6 +79,7 @@ class HX:
         self.baffle_gap = baffle_gap #baffle gap
 
         self.shell_passes = shell_passes #number of shell passes
+        self.tube_passes = tube_passes
 
         self.co_counter = co_counter #counter or co flow. for counter = 'counter', for co = 'co'
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
@@ -189,7 +191,7 @@ class HX:
         self.Rl = 1 # no leakage
 
         self.Jc = baffle_correction_Bell(self.crossflow_tube_fraction, method = 'chebyshev')
-        #self.Jl = baffle_leakage_Bell(hx.Ssb,hx.Stb,hx.Sm)
+        #self.Jl = baffle_leakage_Bell(self.Ssb,self.Stb,self.Sm)
         self.Jl = 1 #no leakage
         self.Jb = bundle_bypassing_Bell(self.bypass_area_fraction,self.seal_strips,self.crossflow_rows)
         self.Jr = 1 #=1 due to high Re

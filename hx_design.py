@@ -21,7 +21,8 @@ hx = HX(tube_number = 13,
         bypass_area_fraction = 0,
         seal_strips = 0,
         crossflow_rows = 4.5,
-        tube_bundle_diameter= 56e-3)
+        tube_bundle_diameter= 56e-3,
+        tube_passes = 1)
 
 #pump characteristic
 year = 2022
@@ -41,12 +42,11 @@ T_outc = 22
 
 #initial heat transfer parameters
 heat_transfer,eff = 1,1
-heat_transfer_new,eff_new = 1,1
 Q_counter = 0
 rel_e_h1,rel_e_c1 = 1,1
 
 
-while (Q_counter < 10):
+while (Q_counter < 10) or ((abs(rel_e_c1) > accuracy) and (abs(rel_e_h1) > accuracy)):
 
     #creating hot and cold water objects
     h_w = water(T_inh,T_outh)
@@ -76,7 +76,7 @@ while (Q_counter < 10):
     U = thermal['U']
 
     Q_counter += 1
-    print(f'q counter: {Q_counter}')
+    #print(f'q counter: {Q_counter}')
 
     if Q_counter > 100:
         print('exceeded max iterations for Q')
