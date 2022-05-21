@@ -1,6 +1,8 @@
 import numpy as np
 from iapws._iapws import _Liquid
 import hx_functions as hxf
+from ht.conv_tube_bank import baffle_correction_Bell, baffle_leakage_Bell , bundle_bypassing_Bell, laminar_correction_Bell, unequal_baffle_spacing_Bell
+from ht.conv_tube_bank import dP_Kern, dP_Zukauskas
 
 class water:
     def __init__(self,Tin,Tout,Pin = 1e5, Pout = 1e5):
@@ -55,6 +57,7 @@ class HX:
                       bypass_area_fraction,
                       seal_strips,
                       crossflow_rows,
+                      tube_bundle_diameter,
                       co_counter='counter',
                       approximate_glue_mass=0
                       ):
@@ -121,7 +124,8 @@ class HX:
         self.tube_length_in_shell = self.tube_length - 2*self.plate.thickness
         self.convection_area = np.pi*self.tube.d_inner*(self.tube_length_in_shell)*tube_number # total area of tube surface for convection
         self.baffle_cut = self.baffle_gap/self.shell.d_inner
-        self.d_otl = self.shell.d_inner - self.pitch
+        self.tube_bundle_diameter = tube_bundle_diameter
+        self.d_otl = tube_bundle_diameter
         self.D_ctl = self.d_otl - self.tube.d_outer
         
         #axisymmetric dividers
@@ -143,37 +147,53 @@ class HX:
             self.b2 = -0.123
             self.b3 = 7
             self.b4 = 0.5
+            self.area_adjustment_factor = 1
         elif self.tube_layout == 's':
             self.theta = 0
             self.b1 = 0.0815
             self.b2 = 0.022
             self.b3 = 6.30
             self.b4 = 0.378
+            self.area_adjustment_factor = 1
+        elif self.tube_layout == 's_rot':
+            self.theta = 45
+            self.area_adjustment_factor = 1/(2**0.5)
 
-        theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)
-        theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))
-        Fw = (1/(2*np.pi))*(theta_ctl - np.sin(theta_ctl))
-        Fc = 1 - 2*Fw
-        A_tubes = self.tube_number * Fw * (np.pi*self.tube.d_outer**2/4)
+        self.theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)
+        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))
+        self.Fw = (1/(2*np.pi))*(self.theta_ctl - np.sin(self.theta_ctl))
+        self.Fc = 1 - 2*self.Fw
+        self.A_tubes = self.tube_number * self.Fw * (np.pi*self.tube.d_outer**2/4)
 
         #effective areas
-        self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/self.pitch)
-        self.Swg = (1/8) * self.shell.d_inner**2 * (theta_ds - np.sin(theta_ds)) 
-        self.Sw = self.Swg - A_tubes
+        self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/(self.pitch*self.area_adjustment_factor))
+        self.Swg = (1/8) * self.shell.d_inner**2 * (self.theta_ds - np.sin(self.theta_ds)) 
+        self.Sw = self.Swg - self.A_tubes
         self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl)
-        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_cut) / (pitch * np.cos(self.theta))
+        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_cut) / (self.pitch * np.cos(self.theta))
         self.Ncw = (0.8 * self.baffle_cut * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
 
         #clearances
         self.delta_tb = 0.4e-3
         self.delta_sb = 0.8e-3 + 0.002 * self.shell.d_inner
 
-        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*theta_ds)
-        self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+Fc)
+        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
+        self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+self.Fc)
 
         self.rs = self.Ssb / (self.Ssb + self.Stb)
         self.rl = (self.Ssb + self.Stb) / self.Sm
-    
+        self.Rs = 1 #uniform baffle spacing
+        self.Rb = np.exp(-3.7*(self.Sb/self.Sm))
+        self.p = 0.8 - 0.15*(1 + self.rs)
+        #self.Rl = np.exp(-1.33*(1+self.rs)*(self.rl**self.p))
+        self.Rl = 1 # no leakage
+
+        self.Jc = baffle_correction_Bell(self.crossflow_tube_fraction, method = 'chebyshev')
+        #self.Jl = baffle_leakage_Bell(hx.Ssb,hx.Stb,hx.Sm)
+        self.Jl = 1 #no leakage
+        self.Jb = bundle_bypassing_Bell(self.bypass_area_fraction,self.seal_strips,self.crossflow_rows)
+        self.Jr = 1 #=1 due to high Re
+        self.Js = 1 #=1 due to even baffle spacing
 
     def total_mass(self):
         #calculate total mass of heat exchanger

@@ -21,7 +21,8 @@ hx = HX(tube_number = 13,
         crossflow_tube_fraction = 1,
         bypass_area_fraction = 0,
         seal_strips = 0,
-        crossflow_rows = 4.5)
+        crossflow_rows = 4.5,
+        tube_bundle_diameter= 56e-3)
 
 #pump characteristic
 year = 2022
@@ -46,14 +47,13 @@ Q_counter = 0
 rel_e_h1,rel_e_c1 = 1,1
 
 
-while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
+while (Q_counter < 10):
 
     #creating hot and cold water objects
     h_w = water(T_inh,T_outh)
     c_w = water(T_inc,T_outc)
 
     #HYDRAULIC DESIGN
-    print('hdesign: ',hx)
     hydraulic = hxf.hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year)
 
     m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
@@ -77,6 +77,7 @@ while (abs(rel_e_c1) > accuracy) and (abs(rel_e_c1) > accuracy):
     U = thermal['U']
 
     Q_counter += 1
+    print(f'q counter: {Q_counter}')
 
     if Q_counter > 100:
         print('exceeded max iterations for Q')

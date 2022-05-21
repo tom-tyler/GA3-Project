@@ -3,8 +3,6 @@ from tkinter import N
 from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
-from ht.conv_tube_bank import baffle_correction_Bell, baffle_leakage_Bell , bundle_bypassing_Bell, laminar_correction_Bell, unequal_baffle_spacing_Bell
-
 
 #HYDRAULIC DESIGN
 
@@ -54,7 +52,6 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         m_h, dP_e_h, m_e_h = mdot_dP(m_h,dP_tube_ovr,'h',h_w,year)
 
         #cold side
-        N = hx.tube_number/hx.shell_passes
         dP_shell = dP_shell_drop(c_w, m_c, hx)
         dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
 
@@ -92,17 +89,13 @@ def Re(V,d,liquid):
 
 
 def dP_shell_drop(liquid, m_c, hx):
-
-    Rs = 1 #uniform baffle spacing
-    Rb = np.exp(-3.7*(hx.Sb/hx.Sm))
-    Rl = 1 #assume no leakage
+    
     nb = hx.baffle_number
 
     dPi = dP_ideal(m_c, liquid, hx)
     dPw = dPw_ideal(m_c, liquid, hx)
 
-    dP = ((nb -1)*dPi*Rb + nb*dPw)*Rl + 2*dPi*(1 + hx.Ncw/hx.Nc)*Rb*Rs
-
+    dP = ((nb - 1)*dPi*hx.Rb + nb*dPw)*hx.Rl + 2*dPi*(1 + hx.Ncw/hx.Nc)*hx.Rb*hx.Rs
     return dP
 
 
@@ -118,8 +111,8 @@ def dP_ideal(m_c, liquid, hx):
     G = m_c/hx.Sm
     b = hx.b3 / (1 + 0.14 * ((hx.tube.d_outer * G)/liquid.mu)**hx.b4)
     phi = 1
-    f = hx.b1 * (1.33/(hx.pitch/hx.tube.d_outer))**b * ((hx.tube.d_outer * G)/liquid.mu)**hx.b2
-    dP_ideal = (2 * f * hx.Nc * G**2)/(1 * liquid.rho * phi)
+    f_ideal = hx.b1 * (1.33/(hx.pitch/hx.tube.d_outer))**b * ((hx.tube.d_outer * G)/liquid.mu)**hx.b2
+    dP_ideal = (2 * f_ideal * hx.Nc * G**2)/(1 * liquid.rho * phi)
     return dP_ideal
 
 
@@ -175,8 +168,6 @@ def U_inside(hi,ho,hx,k_copper = 398):
     ri = di/2
     Ao = np.pi*do*L
     Ai = np.pi*di*L
-
-    print(f'hi,ho: {hi,ho}')
 
     inv_U = 1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho)
     U = 1/inv_U
@@ -234,22 +225,8 @@ def h_outer(m_c, liquid, hx): # bell delaware method
     j = hx.a1 * (1.33 /(hx.pitch/hx.tube.d_outer))**a * (Re_S**hx.a2) #dimensionless quanitity
     phi = 1 #viscosity correction factor
     ho_ideal = j * liquid.cp * G * liquid.Pr**(-2/3)*phi
-    print(f'ho_ideal: {ho_ideal}')
 
-    #correction factors
-    Jc = baffle_correction_Bell(hx.crossflow_tube_fraction, method = 'chebyshev')
-    Jl = baffle_leakage_Bell(hx.Ssb,hx.Stb,hx.Sm)
-    Jb = bundle_bypassing_Bell(hx.bypass_area_fraction,hx.seal_strips,hx.crossflow_rows)
-    Jr = 1 #=1 due to high Re
-    Js = 1 #=1 due to even baffle spacing
-    print('ssb,stb,sm: ',hx.Ssb,hx.Stb,hx.Sm)
-    print('Jc: ',Jc)
-    print('Jl: ',Jl)
-    print('Jb: ',Jb)
-    print('Jr: ',Jr)
-    print('Js: ',Js)
-
-    ho = ho_ideal * Jc * Jl * Jb * Jr * Js
+    ho = ho_ideal * hx.Jc * hx.Jl * hx.Jb * hx.Jr * hx.Js
     return ho
 
 
