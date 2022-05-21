@@ -1,6 +1,5 @@
 import numpy as np
 from iapws._iapws import _Liquid
-import hx_functions as hxf
 from ht.conv_tube_bank import baffle_correction_Bell, baffle_leakage_Bell , bundle_bypassing_Bell, laminar_correction_Bell, unequal_baffle_spacing_Bell
 from ht.conv_tube_bank import dP_Kern, dP_Zukauskas
 
@@ -52,13 +51,15 @@ class HX:
                       baffle_type,
                       tube_layout,
                       shell_passes,
-                      nozzle_bore,
                       crossflow_tube_fraction,
                       bypass_area_fraction,
                       seal_strips,
                       crossflow_rows,
                       tube_bundle_diameter,
                       tube_passes,
+                      year,
+                      T_inh,
+                      T_inc,
                       co_counter='counter',
                       approximate_glue_mass=0
                       ):
@@ -66,6 +67,9 @@ class HX:
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
         self.baffle_number = baffle_number #number of baffles
+        self.year = year
+        self.T_inh = T_inh
+        self.T_inc = T_inc
 
         self.tube_layout = tube_layout #if tubes laid out in a triangular fashion, tube_layout = 't', if laid out in square fashion, tube_layout = 's'
         self.crossflow_tube_fraction = crossflow_tube_fraction #fraction of tubes which are between baffle tips and not in the window
@@ -83,13 +87,7 @@ class HX:
 
         self.co_counter = co_counter #counter or co flow. for counter = 'counter', for co = 'co'
         self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
-        self.nozzle_bore = nozzle_bore #bore size of nozzle
 
-        #fixed heat exchanger parameters
-        self.nozzle_c_area = (np.pi*self.nozzle_bore**2)/4
-        self.no_nozzles = 4 #number of nozzles
-        self.nozzle_mass = 0.025 #mass of nozzles
-        self.plate_number = 4 #number of plates
 
         #creating tube,shell,plate and baffle objects
         self.tube = pipe(6e-3,8e-3,0.20,3.5,self.tube_length)
@@ -98,7 +96,18 @@ class HX:
         self.plate = sheet(4.5e-3,6.375,self.shell.d_inner,circular = True)
         
         self.baffle_type = baffle_type
-        
+        if self.year in [2022,2020,2019]:
+            nozzle_bore = 20e-3
+        elif year in [2018,2017]:
+            nozzle_bore = 19e-3
+        self.nozzle_bore = nozzle_bore #bore size of nozzle
+
+        #fixed heat exchanger parameters
+        self.nozzle_c_area = (np.pi*self.nozzle_bore**2)/4
+        self.no_nozzles = 4 #number of nozzles
+        self.nozzle_mass = 0.025 #mass of nozzles
+        self.plate_number = 4 #number of plates
+
         if baffle_type == 'across_c': #normal case
             r = self.shell.d_inner/2
             self.segment_area = r**2 * np.arccos((r - baffle_gap)/r) - (r - baffle_gap)*(2*r*baffle_gap - baffle_gap**2)**0.5
@@ -176,24 +185,30 @@ class HX:
         self.Ncw = (0.8 * self.baffle_cut * self.shell.d_inner) / (self.pitch * np.cos(self.theta))
 
         #clearances
-        self.delta_tb = 0.4e-3
+        self.delta_tb = 0
         self.delta_sb = 0.8e-3 + 0.002 * self.shell.d_inner
 
-        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
-        self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+self.Fc)
+        #self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
+        #self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+self.Fc)
+        self.Ssb = 0
+        self.Stb = 0
 
-        self.rs = self.Ssb / (self.Ssb + self.Stb)
-        self.rl = (self.Ssb + self.Stb) / self.Sm
+        #self.rs = self.Ssb / (self.Ssb + self.Stb)
+        self.rs = 1
+        #self.rl = (self.Ssb + self.Stb) / self.Sm
+        self.rl = 0
         self.Rs = 1 #uniform baffle spacing
         self.Rb = np.exp(-3.7*(self.Sb/self.Sm))
         self.p = 0.8 - 0.15*(1 + self.rs)
         #self.Rl = np.exp(-1.33*(1+self.rs)*(self.rl**self.p))
         self.Rl = 1 # no leakage
 
-        self.Jc = baffle_correction_Bell(self.crossflow_tube_fraction, method = 'chebyshev')
+        #self.Jc = baffle_correction_Bell(self.crossflow_tube_fraction, method = 'chebyshev')
+        self.Jc = 0.55 + 0.72*self.Fc
         #self.Jl = baffle_leakage_Bell(self.Ssb,self.Stb,self.Sm)
         self.Jl = 1 #no leakage
-        self.Jb = bundle_bypassing_Bell(self.bypass_area_fraction,self.seal_strips,self.crossflow_rows)
+        #self.Jb = bundle_bypassing_Bell(self.bypass_area_fraction,self.seal_strips,self.crossflow_rows)
+        self.Jb = 1
         self.Jr = 1 #=1 due to high Re
         self.Js = 1 #=1 due to even baffle spacing
 

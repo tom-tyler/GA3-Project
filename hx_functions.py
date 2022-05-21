@@ -4,10 +4,11 @@ from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
+from hx_classes import HX
 
 #HYDRAULIC DESIGN
 
-def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy):
     
     m_counter = 0
     dP_e_h = 1
@@ -51,7 +52,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         #print('dptube,dpinout,dphnoz,dpinoutnoz: ',dP_tube,dP_in_plus_out,dP_nozzles_h,dP_in_plus_out_nozzle)
 
         # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
-        m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,year)
+        m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,hx.year)
 
         m_e_h = (m_h_new - m_h)/m_h_new
         m_h = (m_h_new + m_h)/2
@@ -63,7 +64,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         dP_shell_ovr = dP_shell + dP_nozzles_c
         #print('dP_shell,dP_noz',dP_shell,dP_nozzles_c)
         #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
-        m_c_new = mdot_dP(dP_shell_ovr,'c',c_w,year)
+        m_c_new = mdot_dP(dP_shell_ovr,'c',c_w,hx.year)
 
         m_e_c = (m_c_new - m_c)/m_c_new
         m_c = (m_c_new + m_c)/2
@@ -576,3 +577,31 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
     F = (S*np.log(W))/np.log((1 + W - S + S*W)/(1 + W + S - S*W))
 
     return F
+
+
+def heat_exchangers():
+
+    hx_list = []
+
+    hx_y2018_p2022 = HX(tube_number = 13,
+                        baffle_number = 14,
+                        pitch = 12e-3,
+                        tube_length = 362e-3,
+                        shell_length = 450e-3,
+                        baffle_gap = 14e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 1,
+                        crossflow_tube_fraction = 1,
+                        bypass_area_fraction = 0,
+                        seal_strips = 0,
+                        crossflow_rows = 4.5,
+                        tube_bundle_diameter= 56e-3,
+                        tube_passes = 1,
+                        year = 2022,
+                        T_inh = 53.2,
+                        T_inc = 13.8)
+    
+    hx_list.append(hx_y2018_p2022)
+
+    return hx_list
