@@ -3,6 +3,7 @@ from tkinter import N
 from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
+from matplotlib import pyplot as plt
 
 #HYDRAULIC DESIGN
 
@@ -14,7 +15,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
     dP_e_c = 1
     m_e_c = 1
 
-    while (abs(dP_e_h) > accuracy) and (abs(m_e_h) > accuracy) and (abs(dP_e_c) > accuracy) and (abs(m_e_c) > accuracy):
+    while (abs(m_e_h) > accuracy) and (abs(m_e_c) > accuracy):
 
         #heat capacities
         Cc = m_c*c_w.cp
@@ -47,18 +48,25 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
 
         #overall pressure drop
         dP_tube_ovr = dP_tube + dP_in_plus_out + dP_nozzles_h + dP_in_plus_out_nozzle
+        #print('dptube,dpinout,dphnoz,dpinoutnoz: ',dP_tube,dP_in_plus_out,dP_nozzles_h,dP_in_plus_out_nozzle)
 
         # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
-        m_h, dP_e_h, m_e_h = mdot_dP(m_h,dP_tube_ovr,'h',h_w,year)
+        m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,year)
+
+        m_e_h = (m_h_new - m_h)/m_h_new
+        m_h = (m_h_new + m_h)/2
 
         #cold side
         dP_shell = dP_shell_drop(c_w, m_c, hx)
         dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
 
         dP_shell_ovr = dP_shell + dP_nozzles_c
-
+        #print('dP_shell,dP_noz',dP_shell,dP_nozzles_c)
         #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
-        m_c, dP_e_c, m_e_c = mdot_dP(m_c,dP_shell_ovr,'c',c_w,year)
+        m_c_new = mdot_dP(dP_shell_ovr,'c',c_w,year)
+
+        m_e_c = (m_c_new - m_c)/m_c_new
+        m_c = (m_c_new + m_c)/2
 
         m_counter += 1
         if m_counter > 100:
@@ -74,10 +82,13 @@ def dP_tube_drop(hx,liquid,V):
 
     di = hx.tube.d_inner
     L = hx.tube_length
+    G = V*liquid.rho
+    s = liquid.rho/1000
 
     f = friction_factor(Re(V,di,liquid))
 
-    dP = f*(L/di)*0.5*liquid.rho*V**2
+    dP = f*hx.tube_passes*(L/di)*0.5*liquid.rho*V**2
+    #dP = (f*hx.tube_passes*L*G**2)/(2000*di*s)    #same thing (same value)
     return dP
 
 
@@ -93,8 +104,9 @@ def dP_shell_drop(liquid, m_c, hx):
     nb = hx.baffle_number
 
     dPi = dP_ideal(m_c, liquid, hx)
+    #print('dPi:',dPi)
     dPw = dPw_ideal(m_c, liquid, hx)
-
+    #print('dPw:',dPw)
     dP = ((nb - 1)*dPi*hx.Rb + nb*dPw)*hx.Rl + 2*dPi*(1 + hx.Ncw/hx.Nc)*hx.Rb*hx.Rs
     return dP
 
@@ -144,7 +156,10 @@ def h_inner(m_h, liquid, hx):
 
     R = Re(V_tube,di,liquid)
 
-    Nu = 0.023*R**0.8*liquid.Pr**0.3
+    if R > 1e4:
+        Nu = 0.023*R**0.8*liquid.Pr**0.3
+    else:
+        Nu = 0.116*(R**(2/3) - 125)*liquid.Pr**(1/3)*(1 + (di/hx.tube_length)**(2/3))
 
     hi = Nu*liquid.k/di
 
@@ -211,7 +226,11 @@ def dP_inout(liquid,V,sigma):
 
 
 def dP_nozzle(V,liquid):
-    dP = 0.5*liquid.rho*(V**2)
+    G = V*liquid.rho
+    s = liquid.rho/1000
+    
+
+    dP = 7.5e-4*(G**2)/s
     return dP
 
 
@@ -312,7 +331,7 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
 
 
 
-def mdot_dP(m_dot,dP_ovr,side,liquid,year):
+def mdot_dP(dP_ovr,side,liquid,year):
 
     if year == 2022:
         if side == 'h':
@@ -377,7 +396,7 @@ def mdot_dP(m_dot,dP_ovr,side,liquid,year):
         else:
             print('please input side correctly')
 
-    if year == 2019:
+    elif year == 2019:
         if side == 'h':
             mdot_dP_array = np.array([[0.5382,   0.1101e5],
                                       [0.5278,   0.1315e5],
@@ -413,7 +432,7 @@ def mdot_dP(m_dot,dP_ovr,side,liquid,year):
         else:
             print('please input side correctly')
 
-    if year == 2018:
+    elif year == 2018:
         if side == 'h':
             mdot_dP_array = np.array([[0.4954,   0.0989e5],
                                       [0.4805,   0.1245e5],
@@ -468,7 +487,7 @@ def mdot_dP(m_dot,dP_ovr,side,liquid,year):
         else:
             print('please input side correctly')
 
-    if year == 2017:
+    elif year == 2017:
         if side == 'h':
             mdot_dP_array = np.array([[0.4937,   0.0579e5],
                                       [0.4789,   0.0845e5],
@@ -521,18 +540,23 @@ def mdot_dP(m_dot,dP_ovr,side,liquid,year):
         else:
             print('please input side correctly')
 
-    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'cubic')
-    dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
+    else:
+        print('please input a year')
 
-    dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
-    m_dot_new = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
+    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'linear')
+    #dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
 
-    rel_e_dP = (dP_new - dP_ovr)/dP_ovr
-    rel_e_mdot = (m_dot_new - m_dot)/m_dot
+    #dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
+    m_dot = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
 
-    m_dot = (m_dot + m_dot_new)/2
+    #rel_e_dP = (dP_new - dP_ovr)/dP_ovr
+    #rel_e_mdot = (m_dot_new - m_dot)/m_dot
 
-    return m_dot,rel_e_dP,rel_e_mdot
+    #plt.plot(mdot_dP_array[:,0],mdot_dP_array[:,1])
+    #plt.xlabel('m')
+    #plt.ylabel('p')
+
+    return m_dot
 
 
 
