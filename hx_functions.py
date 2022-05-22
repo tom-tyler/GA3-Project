@@ -16,9 +16,6 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
     m_counter = 0
     dP_e_h = 1
     dP_e_c = 1
-    #invalid_hx_flag = False
-
-    print('hydraulic design')
 
     while (abs(dP_e_h) > hx.accuracy) or (abs(dP_e_c) > hx.accuracy): 
 
@@ -47,28 +44,12 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
 
         #pressure drop due to separation leaving nozzle
         dP_in_plus_out_nozzle = dP_inout(h_w,V_nozzle_h,sigma_nozzle)
-        #print('#1',dP_in_plus_out_nozzle)
-        #print('tubeV: ',V_tube)
-        #print('nozV: ',V_nozzle_h)
-        #print('#2',dP_in_out_noz)
 
         #head loss in nozzle
         dP_nozzles_h = 2 * dP_nozzle(V_nozzle_h,h_w)
 
         #overall pressure drop
         dP_tube_ovr = K_hot*(dP_tube + dP_in_plus_out + dP_in_plus_out_nozzle)  + dP_nozzles_h
-        #print('dptube,dpinout,dphnoz,dpinoutnoz: ',dP_tube,dP_in_plus_out,dP_nozzles_h,dP_in_plus_out_nozzle)
-
-        # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
-        # m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,hx.pump_year)
-
-        # dP_e_h = (dP_new_h - dP_shell_ovr)/dP_new_h
-        
-        # if m_h > m_h_new:
-        #     m_h = m_h_new - hx.accuracy
-        # else:
-        #     m_h = m_h_new + hx.accuracy
-        #m_h = (m_h_new + m_h)/2
 
         dP_new_h = mdot_dP(m_h,'h',h_w,hx.pump_year)
 
@@ -78,15 +59,13 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
             m_h += hx.accuracy
         else:
             m_h -= hx.accuracy
-        print('m_h: ',m_h)
 
         #cold side
         dP_shell = dP_shell_drop(c_w, m_c, hx, K_cold)
         dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
 
         dP_shell_ovr = dP_shell + dP_nozzles_c
-        #print('dP_shell,dP_noz',dP_shell,dP_nozzles_c)
-        #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
+
         dP_new_c = mdot_dP(m_c,'c',c_w,hx.pump_year)
 
         dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
@@ -95,18 +74,15 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
             m_c += hx.accuracy
         else:
             m_c -= hx.accuracy
-        print('m_c: ',m_c)
-        #m_c = (m_c_new + m_c)/2
 
         m_counter += 1
         if m_counter > 100:
             print('exceeded max iterations for m,dP')
-            #invalid_hx_flag = True
             break
             
 
     hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
-    return hydraulic #,invalid_hx_flag
+    return hydraulic
 
 
 

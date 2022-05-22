@@ -67,7 +67,7 @@ class HX:
                       ):
 
         #accuracy of calculations
-        self.accuracy = 0.005
+        self.accuracy = 0.01
 
         #input heat exchanger parameters
         self.tube_number = tube_number #number of tubes
