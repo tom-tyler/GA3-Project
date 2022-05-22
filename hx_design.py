@@ -2,9 +2,6 @@ import numpy as np
 import pandas as pd
 import hx_functions as hxf
 
-def hx_design(hx):
-    accuracy = 0.001
-
 
 K_hot = 1.8
 K_cold = 1
