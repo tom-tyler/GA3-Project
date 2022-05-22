@@ -48,20 +48,27 @@ def brute_opt(hx,step):
                                                 for crossflow_rows in range(4,5):
                                                     hx = HX(tube_number = tube_number,
                                                             baffle_number = baffle_number,
-                                                            pitch = pitch/1000,
-                                                            tube_passes = tube_passes,
-                                                            tube_length = tube_length/1000,
-                                                            shell_length = shell_length/1000,
-                                                            baffle_gap = baffle_gap/1000,
-                                                            baffle_type = baffle_type,
-                                                            tube_layout = tube_layout,
-                                                            shell_passes = shell_passes,
-                                                            nozzle_bore=20e-3,
-                                                            crossflow_tube_fraction = 1,
-                                                            bypass_area_fraction = 0,
-                                                            seal_strips = seal_strips,
-                                                            crossflow_rows = crossflow_rows,
-                                                            tube_bundle_diameter= 56e-3)
+                                                            pitch,
+                                                            tube_length,
+                                                            plenum_length_1,
+                                                            plenum_length_2,
+                                                            baffle_gap,
+                                                            baffle_type,
+                                                            tube_layout,
+                                                            shell_passes,
+                                                            tube_bundle_diameter,
+                                                            tube_passes,
+                                                            baffle_spacing_in,
+                                                            baffle_spacing_out,
+                                                            design_year,
+                                                            pump_year,
+                                                            T_inh,
+                                                            T_inc,
+                                                            leakage = True,
+                                                            name = None,
+                                                            co_counter='counter',
+                                                            approximate_glue_mass=0
+                                                            )
                                                     if hxf.total_mass(hx) <= 1.1:
                                                         q = hxd.hx_design(hx)
                                                         if np.isnan(q) == False:
