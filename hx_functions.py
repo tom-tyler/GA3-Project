@@ -807,7 +807,68 @@ def heat_exchangers(heat_exchanger=None):
         hx_singular[heat_exchanger] = hx_list[heat_exchanger]
         return hx_singular
 
+def hx_design_basic(hx):
+    #initial guesses for mass flowrate:
+    m_h = 0.45 #initial guess for hot mass flow rate
+    m_c = 0.45 #initial guess for cold mass flow rate
 
+    #initial guesses for outlet temperatures
+    T_outh = hx.T_inh - 9.103
+    T_outc = hx.T_inc + 10.645
+    R = (hx.T_inc - T_outc)/(T_outh - hx.T_inh)
+
+    if (abs(1-R) <0.1):
+        T_outh = hx.T_inh - 6.2
+        T_outc = hx.T_inc + 7.876
+
+    #initial heat transfer parameters
+    heat_transfer,eff = 1,1
+    Q_counter = 0
+    rel_e_h1,rel_e_c1 = 1,1
+    q_acc = 0.05
+
+
+    while ((abs(rel_e_c1) > q_acc) and (abs(rel_e_h1) > q_acc)):
+
+        #creating hot and cold water objects
+        h_w = water(hx.T_inh,T_outh)
+        c_w = water(hx.T_inc,T_outc)
+
+        #HYDRAULIC DESIGN
+        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold)
+
+        m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
+        dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
+        Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
+    
+        #THERMAL DESIGN
+        thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
+        T_outh,T_outc = thermal['T_outh'], thermal['T_outc']
+        rel_e_h1,rel_e_c1 = thermal['rel_e_h1'], thermal['rel_e_c1']
+        #print('rel_e_h1,rel_e_c1',thermal['rel_e_h1'], thermal['rel_e_c1'])
+
+
+        #HEAT TRANSFER
+
+        heat_transfer_h = Q_h(Ch,T_outh,hx.T_inh)
+        heat_transfer_c = Q_c(Cc,T_outc,hx.T_inc)
+        heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
+        eff = effectiveness(heat_transfer,Cc,Ch,hx.T_inc,hx.T_inh)
+
+        heat_transfer_ntu = thermal['q_ntu']
+        eff_ntu = thermal['eff_ntu']
+        U = thermal['U']
+
+        Q_counter += 1
+        #print(f'q counter: {Q_counter}')
+
+        if Q_counter > 50:
+            print('exceeded max iterations for Q')
+            break
+
+    print(heat_transfer)
+    return heat_transfer
+    
 def brute_opt(step = 20):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
@@ -901,7 +962,7 @@ def brute_opt_2():
     tube_layout = 't'
 
     hx_designs = {}
-    hx_data = pd.DataFrame()
+    hx_data = []
     K_hot = 1.8
     K_cold = 1
     
@@ -914,7 +975,9 @@ def brute_opt_2():
     plenum_length_2 = 41
 
     for tube_passes in range(1,4):
+        
         for tube_number in range(10,15):
+            
             for tube_length in range(100,250,30):
                 if tube_number * tube_length <= 3500:
                     for shell_passes in range(1,2):
@@ -931,8 +994,8 @@ def brute_opt_2():
                                                         baffle_number = baffle_number,
                                                         pitch = 12/1000,
                                                         tube_length = tube_length/1000,
-                                                        plenum_length_1 = 41/1000,
-                                                        plenum_length_2 = 41/1000,
+                                                        plenum_length_1 = plenum_length_1,
+                                                        plenum_length_2 = plenum_length_2,
                                                         baffle_gap = baffle_gap/1000,
                                                         baffle_type = baffle_type,
                                                         tube_layout = tube_layout,
@@ -952,27 +1015,10 @@ def brute_opt_2():
                                                         )
                                     
                                     if heat_exchanger.total_mass() <= 1.1:
+                                        print('pass')
                                         hx_designs[f'design {design_no}'] = heat_exchanger
-                                        performance = hx_design(heat_exchanger,K_hot,K_cold)
-                                        hx_data = hx_data.append(performance, ignore_index = True) 
-                                        hx_data.sort_values(by="Q_LMTD (kW)").head()
-
-    #order columns nicely
-    #hx_data = hx_data[['Name',
-    #            'T cold in (C)',
-    #            'T cold out (C)',
-    #            'T hot in (C)',
-    #            'T hot out (C)',
-    #            'mdot_cold (l/s)',
-    #            'mdot_hot (l/s)',
-    #            'dP_cold (bar)',
-    #            'dP_hot (bar)',
-    #            'Q_LMTD (kW)',
-    #            'eff_LMTD',
-    #            'Q_NTU (kW)',
-    #            'eff_NTU',
-    #            'mass (kg)'
-    #                ]]
-    hx_data = hx_data[['Name', 'Q_LMTD (kW)', 'eff_LMTD', 'Q_NTU (kW)', 'eff_NTU']]
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
-        print(hx_data)
+                                        performance = hx_design_basic(heat_exchanger)
+                                        hx_data = hx_data.append(performance, vars(heat_exchanger)[0:13])
+    
+    hx_data.sort(reverse = True)
+    return hx_data[0:3]
