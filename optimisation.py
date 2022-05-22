@@ -23,7 +23,7 @@ solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the pr
 #solver.solve()
 
 
-def brute_opt(hx,step = 20):
+def brute_opt(step = 20):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c'
@@ -36,45 +36,60 @@ def brute_opt(hx,step = 20):
     
     design_no = 0
 
-    for tube_number in range(12,15):
-        #print(tube_number) #just gives an idea of progress
-        #pitch_max = round(hx.shell.d_inner / tube_number)
-        for shell_length in range(300,350, step):
-            #print(shell_length)
-            for tube_length in range(150,250,step):
-                #print(tube_length)
-                if shell_length - tube_length >= 10: #check this constraint, need to be able to fit nozzles on
-                    if tube_number * tube_length <= 3500:
-                        for shell_passes in range(1,4):
-                            for baffle_number in range(10,13):
-                                for baffle_gap in range(10,60,10):
-                                    for seal_strips in range(0,1):
-                                        for pitch in range(10,20,10):
-                                            for tube_passes in range(1,4):
-                                                for crossflow_rows in range(4,5):
-                                                    design_no += 1
-                                                    heat_exchanger = HX(tube_number = tube_number,
-                                                                                           baffle_number = baffle_number,
-                                                                                           pitch = pitch/1000,
-                                                                                           tube_passes = tube_passes,
-                                                                                           tube_length = tube_length/1000,
-                                                                                           shell_length = shell_length/1000,
-                                                                                           baffle_gap = baffle_gap/1000,
-                                                                                           baffle_type = baffle_type,
-                                                                                           tube_layout = tube_layout,
-                                                                                           shell_passes = shell_passes,
-                                                                                           nozzle_bore=20e-3,
-                                                                                           crossflow_tube_fraction = 1,
-                                                                                           bypass_area_fraction = 0,
-                                                                                           seal_strips = seal_strips,
-                                                                                           crossflow_rows = crossflow_rows,
-                                                                                           tube_bundle_diameter= 56e-3)
-
-                                                    if heat_exchanger.total_mass(hx) <= 1.1:
-                                                        hx_designs[f'design {design_no}'] = heat_exchanger
-                                                        performance = hxf.hx_design(hx_design,K_hot,K_cold)
-                                                        hx_data = hx_data.append(performance, ignore_index = True) 
-                                                        hx_data.sort_values(by="Q_LMTD").head()
+    for tube_passes in range(1,4):
+        for tube_number in range(12,15):
+            #print(tube_number) #just gives an idea of progress
+            #pitch_max = round(hx.shell.d_inner / tube_number)
+            if tube_passes%2 == 0:
+                l_min = 1
+            else:
+                l_min = 41
+            for plenum_length_1 in range(41,100, step):
+                for plenum_length_2 in range(l_min, 100,step):
+                    for tube_length in range(150,250,step):
+                        if tube_number * tube_length <= 3500:
+                            for shell_passes in range(1,4):
+                                if shell_passes%2 == 0:
+                                    bso_min = 1
+                                else:
+                                    bso_min = 41
+                                for baffle_spacing_in in range(41,100,step):
+                                    for baffle_spacing_out in range(bso_min, 100, step):
+                                        for baffle_number in range(10,13):
+                                            for baffle_gap in range(10,60,10):
+                                                #can we do mass constraint here
+                                                    for pitch in range(10,20,10):
+                                                        for crossflow_rows in range(4,5):
+                                                            design_no += 1
+                                                            heat_exchanger = HX(tube_number = tube_number,
+                                                                                baffle_number = baffle_number,
+                                                                                pitch = pitch/1000,
+                                                                                tube_length = tube_length/1000,
+                                                                                plenum_length_1 = plenum_length_1/1000,
+                                                                                plenum_length_2 = plenum_length_2/1000,
+                                                                                baffle_gap = baffle_gap/1000,
+                                                                                baffle_type = baffle_type,
+                                                                                tube_layout = tube_layout,
+                                                                                shell_passes = shell_passes,
+                                                                                tube_bundle_diameter  = (crossflow_rows * pitch + 8e-3)/1000,
+                                                                                tube_passes = tube_passes,
+                                                                                baffle_spacing_in = baffle_spacing_in/1000,
+                                                                                baffle_spacing_out = baffle_spacing_out/1000,
+                                                                                design_year = 2022,
+                                                                                pump_year = 2022,
+                                                                                T_inh = 53.4,
+                                                                                T_inc = 19.2,
+                                                                                leakage = True,
+                                                                                name = None,
+                                                                                co_counter='counter',
+                                                                                approximate_glue_mass=0
+                                                                                )
+                                                            
+                                                            if heat_exchanger.total_mass(heat_exchanger) <= 1.1:
+                                                                hx_designs[f'design {design_no}'] = heat_exchanger
+                                                                performance = hxf.hx_design(heat_exchanger,K_hot,K_cold)
+                                                                hx_data = hx_data.append(performance, ignore_index = True) 
+                                                                hx_data.sort_values(by="Q_LMTD").head()
 
     #order columns nicely
     hx_data = hx_data[['Name',
@@ -95,24 +110,23 @@ def brute_opt(hx,step = 20):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-
             
 def optimiser(hx):
     best_array = []
     step_array = []
     tube_length_array = []
-    for step in range(100,5,-5):
-        print(step)
-        optimised = brute_opt(hx,step)
-        best_design = optimised[0]
-        q_best = best_design[0]
-        tube_length = optimised[1]
-        best_array.append(q_best[0])
-        tube_length_array.append(tube_length*20)
-        step_array.append(step)
+    step = 50
 
-    plt.plot(step_array, best_array)
-    plt.plot(step_array, tube_length_array)
+    optimised = brute_opt(hx,step)
+    best_design = optimised[0]
+    q_best = best_design[0]
+    tube_length = optimised[1]
+    best_array.append(q_best[0])
+    tube_length_array.append(tube_length*20)
+    step_array.append(step)
+
+    #plt.plot(step_array, best_array)
+    #plt.plot(step_array, tube_length_array)
     plt.show()
 
     return optimised
