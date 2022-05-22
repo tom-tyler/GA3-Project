@@ -6,6 +6,8 @@ from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
 from hx_classes import HX, water, pipe
 import pandas as pd
+from numpy import pi
+from math import sqrt 
 
 #HYDRAULIC DESIGN
 
@@ -73,9 +75,9 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
 
         if dP_tube_ovr < dP_new_h:
-            m_h += m_h*hx.accuracy
+            m_h += hx.accuracy
         else:
-            m_h -= m_h*hx.accuracy
+            m_h -= hx.accuracy
         print('m_h: ',m_h)
 
         #cold side
@@ -90,9 +92,9 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
 
         if dP_shell_ovr < dP_new_c:
-            m_c += m_c*hx.accuracy
+            m_c += hx.accuracy
         else:
-            m_c -= m_c*hx.accuracy
+            m_c -= hx.accuracy
         print('m_c: ',m_c)
         #m_c = (m_c_new + m_c)/2
 
@@ -330,14 +332,14 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
         rel_e_h = (T_outh_new - T_outh)/T_outh
 
         if T_outc > T_outc_new:
-            T_outc = T_outc_new - T_outc_new*hx.accuracy
+            T_outc = T_outc_new - hx.accuracy
         else:
-            T_outc = T_outc_new + T_outc_new*hx.accuracy
+            T_outc = T_outc_new + hx.accuracy
 
         if T_outh > T_outh_new:
-            T_outh = T_outh_new - T_outh_new*hx.accuracy
+            T_outh = T_outh_new - hx.accuracy
         else:
-            T_outh = T_outh_new + T_outh_new*hx.accuracy
+            T_outh = T_outh_new + hx.accuracy
         #T_outc = (T_outc_new + T_outc)/2
         #T_outh = (T_outh_new + T_outh)/2
         T_counter += 1
@@ -842,6 +844,25 @@ def heat_exchangers(heat_exchanger=None):
         hx_singular[heat_exchanger] = hx_list[heat_exchanger]
         return hx_singular
 
+def hx_design_basic(hx):
+    #initial guesses for mass flowrate:
+    m_h = 0.45 #initial guess for hot mass flow rate
+    m_c = 0.45 #initial guess for cold mass flow rate
+
+    #initial guesses for outlet temperatures
+    T_outh = hx.T_inh - 9.103
+    T_outc = hx.T_inc + 10.645
+    R = (hx.T_inc - T_outc)/(T_outh - hx.T_inh)
+
+    if (abs(1-R) <0.1):
+        T_outh = hx.T_inh - 6.2
+        T_outc = hx.T_inc + 7.876
+
+    #initial heat transfer parameters
+    heat_transfer,eff = 1,1
+    Q_counter = 0
+    rel_e_h1,rel_e_c1 = 1,1
+    q_acc = 0.05
 
 
 def hx_moodle_data(K_hot = 1.8, K_cold = 1):
@@ -1009,3 +1030,69 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         print(hx_data)
 
 
+def brute_opt_2():
+    #brute optimisation but applying some common sense to reduce time
+    baffle_type = 'across_c'
+    tube_layout = 't'
+
+    hx_designs = {}
+    hx_data = []
+    K_hot = 1.8
+    K_cold = 1
+    
+    design_no = 0
+
+    pitch = 12e-3
+    crossflow_rows = 4.5
+    tube_bundle_diameter = (crossflow_rows * pitch + 8e-3)/1000
+    plenum_length_1 = 41
+    plenum_length_2 = 41
+
+    for tube_passes in range(1,4):
+        
+        for tube_number in range(10,15):
+            
+            for tube_length in range(100,250,30):
+                if tube_number * tube_length <= 3500:
+                    for shell_passes in range(1,2):
+                        if shell_passes%2 == 0:
+                            bso_min = 10
+                        else:
+                            bso_min = 41
+                        baffle_spacing_in = 41
+                        for baffle_spacing_out in range(bso_min, 90, 40):
+                            for baffle_number in range(10,14):
+                                for baffle_gap in range(10,60,10):
+                                    design_no += 1
+                                    heat_exchanger = HX(tube_number = tube_number,
+                                                        baffle_number = baffle_number,
+                                                        pitch = 12/1000,
+                                                        tube_length = tube_length/1000,
+                                                        plenum_length_1 = plenum_length_1,
+                                                        plenum_length_2 = plenum_length_2,
+                                                        baffle_gap = baffle_gap/1000,
+                                                        baffle_type = baffle_type,
+                                                        tube_layout = tube_layout,
+                                                        shell_passes = shell_passes,
+                                                        tube_bundle_diameter  = tube_bundle_diameter,
+                                                        tube_passes = tube_passes,
+                                                        baffle_spacing_in = baffle_spacing_in/1000,
+                                                        baffle_spacing_out = baffle_spacing_out/1000,
+                                                        design_year = 2022,
+                                                        pump_year = 2022,
+                                                        T_inh = 53.4,
+                                                        T_inc = 19.2,
+                                                        leakage = True,
+                                                        name = None,
+                                                        co_counter='counter',
+                                                        approximate_glue_mass=0
+                                                        )
+                                    
+                                    if heat_exchanger.total_mass() <= 1.1:
+                                        print('pass')
+                                        hx_designs[f'design {design_no}'] = heat_exchanger
+                                        performance = hx_design_basic(heat_exchanger)
+                                        hx_data = hx_data.append(performance, vars(heat_exchanger)[0:13])
+    
+    hx_data.sort(reverse = True)
+    return hx_data[0:3]
