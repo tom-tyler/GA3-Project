@@ -4,18 +4,21 @@ from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
-from hx_classes import HX, water
+from hx_classes import HX, water, pipe
 import pandas as pd
 
 #HYDRAULIC DESIGN
 
-def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1,K_cold = 1):
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
     
     m_counter = 0
-    m_e_h = 1
-    m_e_c = 1
+    dP_e_h = 1
+    dP_e_c = 1
+    #invalid_hx_flag = False
 
-    while (abs(m_e_h) > hx.accuracy) and (abs(m_e_c) > hx.accuracy):
+    print('hydraulic design')
+
+    while (abs(dP_e_h) > hx.accuracy) or (abs(dP_e_c) > hx.accuracy): 
 
         #heat capacities
         Cc = m_c*c_w.cp
@@ -55,10 +58,25 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1,K_cold = 1):
         #print('dptube,dpinout,dphnoz,dpinoutnoz: ',dP_tube,dP_in_plus_out,dP_nozzles_h,dP_in_plus_out_nozzle)
 
         # now need iteration routine to get m_h such that dP_tube_ovr matches figure 6 from handout
-        m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,hx.pump_year)
+        # m_h_new = mdot_dP(dP_tube_ovr,'h',h_w,hx.pump_year)
 
-        m_e_h = (m_h_new - m_h)/m_h_new
-        m_h = (m_h_new + m_h)/2
+        # dP_e_h = (dP_new_h - dP_shell_ovr)/dP_new_h
+        
+        # if m_h > m_h_new:
+        #     m_h = m_h_new - hx.accuracy
+        # else:
+        #     m_h = m_h_new + hx.accuracy
+        #m_h = (m_h_new + m_h)/2
+
+        dP_new_h = mdot_dP(m_h,'h',h_w,hx.pump_year)
+
+        dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
+
+        if dP_tube_ovr < dP_new_h:
+            m_h += m_h*hx.accuracy
+        else:
+            m_h -= m_h*hx.accuracy
+        print('m_h: ',m_h)
 
         #cold side
         dP_shell = dP_shell_drop(c_w, m_c, hx, K_cold)
@@ -67,18 +85,26 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1,K_cold = 1):
         dP_shell_ovr = dP_shell + dP_nozzles_c
         #print('dP_shell,dP_noz',dP_shell,dP_nozzles_c)
         #now need iteration routine to get m_c such that dP_shell_ovr matches figure 6 from handout
-        m_c_new = mdot_dP(dP_shell_ovr,'c',c_w,hx.pump_year)
+        dP_new_c = mdot_dP(m_c,'c',c_w,hx.pump_year)
 
-        m_e_c = (m_c_new - m_c)/m_c_new
-        m_c = (m_c_new + m_c)/2
+        dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
+
+        if dP_shell_ovr < dP_new_c:
+            m_c += m_c*hx.accuracy
+        else:
+            m_c -= m_c*hx.accuracy
+        print('m_c: ',m_c)
+        #m_c = (m_c_new + m_c)/2
 
         m_counter += 1
         if m_counter > 100:
-                print('exceeded max iterations for m,dP')
-                break
+            print('exceeded max iterations for m,dP')
+            #invalid_hx_flag = True
+            break
+            
 
     hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
-    return hydraulic
+    return hydraulic #,invalid_hx_flag
 
 
 
@@ -290,7 +316,7 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
     T_counter = 0
     rel_e_h,rel_e_c = 1,1
 
-    while (abs(rel_e_c) > hx.accuracy) and (abs(rel_e_h) > hx.accuracy):
+    while (abs(rel_e_c) > hx.accuracy) or (abs(rel_e_h) > hx.accuracy):
 
         F = correction_factor(T_inc,T_inh,T_outc,T_outh,hx)
 
@@ -300,22 +326,27 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
     
         T_outh_new = fsolve(lambda T_outh: (T_inh - T_outh) - (1/Ch)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outh)[0]
         
-        if T_counter == 0:
-            rel_e_c1 = (T_outc_new - T_outc)/T_outc
-            rel_e_h1 = (T_outh_new - T_outh)/T_outh
         rel_e_c = (T_outc_new - T_outc)/T_outc
         rel_e_h = (T_outh_new - T_outh)/T_outh
-        #T_outc = T_outc_new
-        #T_outh = T_outh_new
-        T_outc = (T_outc_new + T_outc)/2
-        T_outh = (T_outh_new + T_outh)/2
+
+        if T_outc > T_outc_new:
+            T_outc = T_outc_new - T_outc_new*hx.accuracy
+        else:
+            T_outc = T_outc_new + T_outc_new*hx.accuracy
+
+        if T_outh > T_outh_new:
+            T_outh = T_outh_new - T_outh_new*hx.accuracy
+        else:
+            T_outh = T_outh_new + T_outh_new*hx.accuracy
+        #T_outc = (T_outc_new + T_outc)/2
+        #T_outh = (T_outh_new + T_outh)/2
         T_counter += 1
 
         if T_counter > 100:
             print('exceeded max iterations for T')
             break
 
-    thermal = {'T_outh':T_outh,'T_outc':T_outc,'rel_e_c1':rel_e_c1,'rel_e_h1':rel_e_h1,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
     return thermal
 
 
@@ -343,7 +374,7 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
 
 
 
-def mdot_dP(dP_ovr,side,liquid,year):
+def mdot_dP(m_dot,side,liquid,year):
 
     if year == 2022:
         if side == 'h':
@@ -555,14 +586,14 @@ def mdot_dP(dP_ovr,side,liquid,year):
     else:
         print('please input a year')
 
-    if dP_ovr > 0.65e5:
-        dP_ovr = 0.65e5
+    # if dP_ovr > 0.65e5:
+    #     dP_ovr = 0.65e5
 
-    mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'linear')
-    #dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
+    #mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'linear')
+    dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
 
-    #dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
-    m_dot = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
+    dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
+    #m_dot = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
 
     #rel_e_dP = (dP_new - dP_ovr)/dP_ovr
     #rel_e_mdot = (m_dot_new - m_dot)/m_dot
@@ -571,7 +602,7 @@ def mdot_dP(dP_ovr,side,liquid,year):
     #plt.xlabel('m')
     #plt.ylabel('p')
 
-    return m_dot
+    return dP_new
 
 
 
@@ -593,22 +624,11 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
     return F
 
 
-def total_mass(hx):
-        #calculate total mass of heat exchanger
-        total_nozzle_mass = hx.no_nozzles*hx.nozzle_mass
-        total_tube_mass = hx.tube_number*hx.tube.mass
-        total_shell_mass = hx.shell.mass
-        total_baffle_mass = hx.baffle_number*hx.baffle.mass
-        total_plate_mass = hx.plate_number*hx.plate.mass
-        total_divider_mass = hx.divider_no*hx.divider.mass
-
-        return total_baffle_mass + total_tube_mass + total_nozzle_mass + total_plate_mass + total_shell_mass + total_divider_mass
-
 
 def hx_design(hx,K_hot,K_cold):
 
     #initial guesses for mass flowrate:
-    m_h = 0.45 #initial guess for hot mass flow rate
+    m_h = 0.3 #initial guess for hot mass flow rate
     m_c = 0.45 #initial guess for cold mass flow rate
 
     #initial guesses for outlet temperatures
@@ -624,17 +644,19 @@ def hx_design(hx,K_hot,K_cold):
     heat_transfer,eff = 1,1
     Q_counter = 0
     rel_e_h1,rel_e_c1 = 1,1
-    q_acc = 0.05
 
 
-    while ((abs(rel_e_c1) > q_acc) and (abs(rel_e_h1) > q_acc)):
+    while ((abs(rel_e_c1) > hx.accuracy) or (abs(rel_e_h1) > hx.accuracy)):
 
         #creating hot and cold water objects
         h_w = water(hx.T_inh,T_outh)
         c_w = water(hx.T_inc,T_outc)
 
         #HYDRAULIC DESIGN
-        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold)
+        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold) #,invalid_hx_flag 
+
+        #if invalid_hx_flag == True:
+            #break
 
         m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
         dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
@@ -642,9 +664,20 @@ def hx_design(hx,K_hot,K_cold):
     
         #THERMAL DESIGN
         thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
-        T_outh,T_outc = thermal['T_outh'], thermal['T_outc']
-        rel_e_h1,rel_e_c1 = thermal['rel_e_h1'], thermal['rel_e_c1']
-        #print('rel_e_h1,rel_e_c1',thermal['rel_e_h1'], thermal['rel_e_c1'])
+        T_outh_new,T_outc_new = thermal['T_outh'], thermal['T_outc']
+
+        rel_e_c1 = (T_outc_new - T_outc)/T_outc
+        rel_e_h1 = (T_outh_new - T_outh)/T_outh
+
+        if T_outc > T_outc_new:
+            T_outc = T_outc_new - hx.accuracy
+        else:
+            T_outc = T_outc_new + hx.accuracy
+            
+        if T_outh > T_outh_new:
+            T_outh = T_outh_new - hx.accuracy
+        else:
+            T_outh = T_outh_new + hx.accuracy
 
 
         #HEAT TRANSFER
@@ -667,24 +700,28 @@ def hx_design(hx,K_hot,K_cold):
 
         #now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
         #need to use lmtd and e-ntu approaches
-    
-    hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
-               'T cold in (C)':hx.T_inc,
-               'T cold out (C)':T_outc,
-               'T hot in (C)':hx.T_inh,
-               'T hot out (C)':T_outh,
-               'mdot_cold (l/s)':m_c/(c_w.rho/1000),
-               'mdot_hot (l/s)':m_h/(h_w.rho/1000),
-               'dP_cold (bar)':dP_cold/1e5,
-               'dP_hot (bar)':dP_hot/1e5,
-               'Q_LMTD (kW)':heat_transfer,
-               'eff_LMTD':eff,
-               'Q_NTU (kW)':heat_transfer_ntu,
-               'eff_NTU':eff_ntu,
-               'mass (kg)':hx.total_mass()
-               }
 
-    return hx_dict
+        #if invalid_hx_flag == False:
+    hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
+            'T cold in (C)':hx.T_inc,
+            'T cold out (C)':T_outc,
+            'T hot in (C)':hx.T_inh,
+            'T hot out (C)':T_outh,
+            'mdot_cold (l/s)':m_c/(c_w.rho/1000),
+            'mdot_hot (l/s)':m_h/(h_w.rho/1000),
+            'dP_cold (bar)':dP_cold/1e5,
+            'dP_hot (bar)':dP_hot/1e5,
+            'Q_LMTD (kW)':heat_transfer,
+            'eff_LMTD':eff,
+            'Q_NTU (kW)':heat_transfer_ntu,
+            'eff_NTU':eff_ntu,
+            'mass (kg)':hx.total_mass()
+            }
+    #else:
+        #hx_dict = {}
+
+    return hx_dict #,invalid_hx_flag
+
 
 
 def heat_exchangers(heat_exchanger=None):
@@ -806,73 +843,20 @@ def heat_exchangers(heat_exchanger=None):
         return hx_singular
 
 
-def brute_opt(step = 20):
-    #brute force optimisation with a few checks to eliminate cases as early as possible
 
-    baffle_type = 'across_c'
-    tube_layout = 't'
+def hx_moodle_data(K_hot = 1.8, K_cold = 1):
 
-    hx_designs = {}
+
+    hx_list = heat_exchangers()
     hx_data = pd.DataFrame()
-    K_hot = 1.8
-    K_cold = 1
-    
-    design_no = 0
 
-    for tube_passes in range(1,4):
-        for tube_number in range(12,15):
-            #print(tube_number) #just gives an idea of progress
-            #pitch_max = round(hx.shell.d_inner / tube_number)
-            if tube_passes%2 == 0:
-                l_min = 1
-            else:
-                l_min = 41
-            for plenum_length_1 in range(41,100, step):
-                for plenum_length_2 in range(l_min, 100,step):
-                    for tube_length in range(150,250,step):
-                        if tube_number * tube_length <= 3500:
-                            for shell_passes in range(1,4):
-                                if shell_passes%2 == 0:
-                                    bso_min = 1
-                                else:
-                                    bso_min = 41
-                                for baffle_spacing_in in range(41,100,step):
-                                    for baffle_spacing_out in range(bso_min, 100, step):
-                                        for baffle_number in range(10,13):
-                                            for baffle_gap in range(10,60,10):
-                                                #can we do mass constraint here
-                                                    for pitch in range(10,20,10):
-                                                        for crossflow_rows in range(4,5):
-                                                            design_no += 1
-                                                            heat_exchanger = HX(tube_number = tube_number,
-                                                                                baffle_number = baffle_number,
-                                                                                pitch = pitch/1000,
-                                                                                tube_length = tube_length/1000,
-                                                                                plenum_length_1 = plenum_length_1/1000,
-                                                                                plenum_length_2 = plenum_length_2/1000,
-                                                                                baffle_gap = baffle_gap/1000,
-                                                                                baffle_type = baffle_type,
-                                                                                tube_layout = tube_layout,
-                                                                                shell_passes = shell_passes,
-                                                                                tube_bundle_diameter  = (crossflow_rows * pitch + 8e-3)/1000,
-                                                                                tube_passes = tube_passes,
-                                                                                baffle_spacing_in = baffle_spacing_in/1000,
-                                                                                baffle_spacing_out = baffle_spacing_out/1000,
-                                                                                design_year = 2022,
-                                                                                pump_year = 2022,
-                                                                                T_inh = 53.4,
-                                                                                T_inc = 19.2,
-                                                                                leakage = True,
-                                                                                name = None,
-                                                                                co_counter='counter',
-                                                                                approximate_glue_mass=0
-                                                                                )
-                                                            
-                                                            if heat_exchanger.total_mass() <= 1.1:
-                                                                hx_designs[f'design {design_no}'] = heat_exchanger
-                                                                performance = hx_design(heat_exchanger,K_hot,K_cold)
-                                                                hx_data = hx_data.append(performance, ignore_index = True) 
-                                                                hx_data.sort_values(by="Q_LMTD (kW)").head()
+    for hxi in hx_list:
+        hx = hx_list[hxi]
+
+        performance = hx_design(hx,K_hot,K_cold) #,invalid_hx_flag 
+
+
+        hx_data = hx_data.append(performance, ignore_index = True)
 
     #order columns nicely
     hx_data = hx_data[['Name',
@@ -890,6 +874,138 @@ def brute_opt(step = 20):
                 'eff_NTU',
                 'mass (kg)'
                     ]]
+    hx_data = hx_data.sort_values(by="Q_LMTD (kW)", ascending=False).head()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
+
+
+
+def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
+    #brute force optimisation with a few checks to eliminate cases as early as possible
+
+    baffle_type = 'across_c' #assume this is best
+    tube_layout = 't'        #assume this is best
+
+    hx_designs = {}
+    hx_data = pd.DataFrame()
+    
+    design_no = 0
+
+    tp_array = np.array([1,2,3,4])
+    sp_array = np.array([1,2])
+    pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
+    bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
+    bn_array = np.array(range(4,10 + 1))
+    bg_array = np.linspace(10e-3,30e-3,n)
+    p_array = np.linspace(10e-3,20e-3,n)
+
+    packing_density = np.pi/np.sqrt(12) - 0.2
+    max_tube_area = np.pi*(32e-3**2)*packing_density
+
+    shortest_tube = 150e-3
+
+    tube = pipe(6e-3,8e-3,0.20,3.5,shortest_tube)
+
+    for pitch in p_array:
+
+        eff_tube_area = np.pi*(pitch/2)**2
+        max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
+        max_no_tube_from_mass = int(1.1/tube.mass)
+        max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
+        tn_array = np.array(range(8,max_no_tubes + 1))
+
+        for tube_passes in tp_array:
+
+            # if tube_passes%2 == 0:
+            #     l_min = 10e-3
+            # else:
+            #     l_min = 41e-3
+            pl2_array = np.array([41e-3]) #np.linspace(l_min,100e-3,n)
+        
+            for shell_passes in sp_array:
+
+                # if shell_passes%2 == 0:
+                #     bso_min = 10e-3
+                # else:
+                #     bso_min = 41e-3
+                bso_array = np.array([41e-3]) #np.linspace(bso_min,50e-3,n)
+                for tube_number in tn_array:
+                    print('tube_number',tube_number)
+
+                    for plenum_length_1 in pl1_array:                        
+
+                        for plenum_length_2 in pl2_array:
+                    
+                            max_tube_length = (0.35 - plenum_length_1 - plenum_length_2)
+                            tl_array = np.linspace(shortest_tube,max_tube_length,n)
+                            n_total = tp_array.size*sp_array.size*tl_array.size*pl1_array.size*bsi_array.size*bn_array.size*bg_array.size*p_array.size*bso_array.size*tn_array.size*pl2_array.size
+
+                            for tube_length in tl_array:
+
+                                tube.l = tube_length
+
+                                if (tube_number * tube_length <= 3.5) and (tube_number * tube.mass <= 1.1):               
+                                
+                                    for baffle_spacing_in in bsi_array:
+
+                                        for baffle_spacing_out in bso_array:
+
+                                            for baffle_number in bn_array:
+                                                print('baffle_number',baffle_number)
+
+                                                for baffle_gap in bg_array:    
+                                                                
+                                                    design_no += 1
+                                                    print(f'design number = {design_no}, designs = {n_total}')
+                                                    heat_exchanger = HX(tube_number = tube_number,
+                                                                        baffle_number = baffle_number,
+                                                                        pitch = pitch,
+                                                                        tube_length = tube_length,
+                                                                        plenum_length_1 = plenum_length_1,
+                                                                        plenum_length_2 = plenum_length_2,
+                                                                        baffle_gap = baffle_gap,
+                                                                        baffle_type = baffle_type,
+                                                                        tube_layout = tube_layout,
+                                                                        shell_passes = shell_passes,
+                                                                        tube_bundle_diameter  = (64e-3- (pitch-tube.d_outer)),
+                                                                        tube_passes = tube_passes,
+                                                                        baffle_spacing_in = baffle_spacing_in,
+                                                                        baffle_spacing_out = baffle_spacing_out,
+                                                                        design_year = 2022,
+                                                                        pump_year = 2022,
+                                                                        T_inh = 53.4,
+                                                                        T_inc = 19.2,
+                                                                        leakage = True,
+                                                                        name = f'design number = {design_no}',
+                                                                        co_counter='counter',
+                                                                        approximate_glue_mass=0
+                                                                        )
+                                                    
+                                                    if heat_exchanger.total_mass() <= 1.1:
+                                                        hx_designs[f'design {design_no}'] = heat_exchanger
+                                                        performance = hx_design(heat_exchanger,K_hot,K_cold) #,invalid_hx_flag
+                                                        #if invalid_hx_flag == False:
+                                                        hx_data = hx_data.append(performance, ignore_index = True) 
+                                                            
+
+    #order columns nicely
+    hx_data = hx_data.sort_values(by="Q_LMTD (kW)", ascending=False).head()
+    hx_data = hx_data[['Name',
+                'T cold in (C)',
+                'T cold out (C)',
+                'T hot in (C)',
+                'T hot out (C)',
+                'mdot_cold (l/s)',
+                'mdot_hot (l/s)',
+                'dP_cold (bar)',
+                'dP_hot (bar)',
+                'Q_LMTD (kW)',
+                'eff_LMTD',
+                'Q_NTU (kW)',
+                'eff_NTU',
+                'mass (kg)'
+                    ]]
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
+        print(hx_data)
+
 
