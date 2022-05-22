@@ -2,6 +2,9 @@ from geneal.genetic_algorithms import ContinuousGenAlgSolver
 from geneal.applications.fitness_functions.continuous import fitness_functions_continuous
 from hx_classes import HX
 import hx_functions as hxf
+import hx_design as hxd
+import numpy as np
+import matplotlib.pyplot as plt
 
 solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the problem
                                 fitness_function=fitness_functions_continuous(3), # fitness function to be maximized
@@ -18,58 +21,83 @@ solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the pr
 
 #solver.solve()
 
-hx = HX(tube_number = 13,
-        baffle_number = 14,
-        pitch = 12e-3,
-        tube_length = 362e-3,
-        shell_length = 450e-3,
-        baffle_gap = 14e-3,
-        baffle_type = 'across_c',
-        tube_layout='t',
-        shell_passes=1,
-        nozzle_bore=20e-3,
-        crossflow_tube_fraction = 1,
-        bypass_area_fraction = 0,
-        seal_strips = 0,
-        crossflow_rows = 4.5,
-        tube_bundle_diameter= 56e-3)
 
-def brute_opt(hx):
+def brute_opt(hx,step):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c'
     tube_layout = 't'
-    number_iterations = 0
 
-    for tube_number in range(1,15):
-        pitch_max = round(hx.shell.d_inner/tube_number)
-        for tube_length in range(0,350):
-            if tube_number * tube_length <= 3500:
-                for shell_length in range(0,350):
-                    for shell_passes in range(0,4):
-                        for baffle_number in range(0,60):
-                            for baffle_gap in range(0,64):
-                                for seal_strips in range(0,20):
-                                    if hx.total_mass() <= 1.1:
-                                        for pitch in range(10,pitch_max):
-                                            print(number_iterations)
-                                            crossflow_rows = hx.shell.d_inner/pitch
-                                            hx = HX(tube_number = tube_number,
-                                                    baffle_number = baffle_number,
-                                                    pitch = pitch/1000,
-                                                    tube_length = tube_length/1000,
-                                                    shell_length = shell_length/1000,
-                                                    baffle_gap = baffle_gap/1000,
-                                                    baffle_type = baffle_type,
-                                                    tube_layout = tube_layout,
-                                                    shell_passes = shell_passes,
-                                                    nozzle_bore=20e-3,
-                                                    crossflow_tube_fraction = 1,
-                                                    bypass_area_fraction = 0,
-                                                    seal_strips = seal_strips,
-                                                    crossflow_rows = crossflow_rows,
-                                                    tube_bundle_diameter= 56e-3)
-                                            number_iterations += 1
+    designs = []
+
+    for tube_number in range(12,15):
+        #print(tube_number) #just gives an idea of progress
+        #pitch_max = round(hx.shell.d_inner / tube_number)
+        for shell_length in range(300,350, step):
+            #print(shell_length)
+            for tube_length in range(150,250,step):
+                #print(tube_length)
+                if shell_length - tube_length >= 10: #check this constraint, need to be able to fit nozzles on
+                    if tube_number * tube_length <= 3500:
+                        for shell_passes in range(1,4):
+                            for baffle_number in range(10,13):
+                                for baffle_gap in range(10,60,10):
+                                    for seal_strips in range(0,1):
+                                        for pitch in range(10,20,10):
+                                            for tube_passes in range(1,4):
+                                                for crossflow_rows in range(4,5):
+                                                    hx = HX(tube_number = tube_number,
+                                                            baffle_number = baffle_number,
+                                                            pitch = pitch/1000,
+                                                            tube_passes = tube_passes,
+                                                            tube_length = tube_length/1000,
+                                                            shell_length = shell_length/1000,
+                                                            baffle_gap = baffle_gap/1000,
+                                                            baffle_type = baffle_type,
+                                                            tube_layout = tube_layout,
+                                                            shell_passes = shell_passes,
+                                                            nozzle_bore=20e-3,
+                                                            crossflow_tube_fraction = 1,
+                                                            bypass_area_fraction = 0,
+                                                            seal_strips = seal_strips,
+                                                            crossflow_rows = crossflow_rows,
+                                                            tube_bundle_diameter= 56e-3)
+                                                    if hxf.total_mass(hx) <= 1.1:
+                                                        q = hxd.hx_design(hx)
+                                                        if np.isnan(q) == False:
+                                                            attributes = vars(hx)
+                                                            designs.append((q,list(attributes.items())[0:13]))
 
 
-brute_opt(hx)
+    designs.sort(reverse = True)
+    return designs[0:2], tube_length
+
+
+            
+def optimiser(hx):
+    best_array = []
+    step_array = []
+    tube_length_array = []
+    for step in range(100,5,-5):
+        print(step)
+        optimised = brute_opt(hx,step)
+        best_design = optimised[0]
+        q_best = best_design[0]
+        tube_length = optimised[1]
+        best_array.append(q_best[0])
+        tube_length_array.append(tube_length*20)
+        step_array.append(step)
+
+    plt.plot(step_array, best_array)
+    plt.plot(step_array, tube_length_array)
+    plt.show()
+
+    return optimised
+
+
+print(optimiser(HX))
+
+
+
+#brute_opt(HX)
+

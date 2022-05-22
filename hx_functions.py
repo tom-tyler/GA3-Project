@@ -576,3 +576,15 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
     F = (S*np.log(W))/np.log((1 + W - S + S*W)/(1 + W + S - S*W))
 
     return F
+
+
+def total_mass(hx):
+        #calculate total mass of heat exchanger
+        total_nozzle_mass = hx.no_nozzles*hx.nozzle_mass
+        total_tube_mass = hx.tube_number*hx.tube.mass
+        total_shell_mass = hx.shell.mass
+        total_baffle_mass = hx.baffle_number*hx.baffle.mass
+        total_plate_mass = hx.plate_number*hx.plate.mass
+        total_divider_mass = hx.divider_no*hx.divider.mass
+
+        return total_baffle_mass + total_tube_mass + total_nozzle_mass + total_plate_mass + total_shell_mass + total_divider_mass

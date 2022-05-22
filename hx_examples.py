@@ -24,3 +24,21 @@ hx = HX(tube_number = 13,
         tube_layout='t',
         shell_passes=1,
         nozzle_bore=25e-3)
+
+
+hx = HX(tube_number = 10,
+           baffle_number = 10,
+           pitch = 10/1000,
+           tube_length = 200e-3,
+           shell_length = 300e-3,
+           baffle_gap = 10e-3,
+           baffle_type = 'across_c',
+           tube_layout='t',
+           shell_passes=1,
+           nozzle_bore=20e-3,
+           crossflow_tube_fraction = 1,
+           bypass_area_fraction = 0,
+           seal_strips = 0,
+           crossflow_rows = 4.5,
+           tube_bundle_diameter= 56e-3,
+           tube_passes = 1)
