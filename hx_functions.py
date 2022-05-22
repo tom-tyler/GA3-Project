@@ -696,7 +696,8 @@ def heat_exchangers(heat_exchanger=None):
                         baffle_spacing_in = 39e-3,
                         baffle_spacing_out = 39e-3,
                         leakage = True,
-                        name = 'JPL-2018')
+                        name = 'JPL-2018'
+                        )
 
 
     hx_list['hx_y2018_p2019'] = HX(tube_number = 13,
