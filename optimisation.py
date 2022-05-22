@@ -23,7 +23,7 @@ solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the pr
 #solver.solve()
 
 
-def brute_opt(s = 0.1):
+def brute_opt(s=0.1):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c'
@@ -46,50 +46,49 @@ def brute_opt(s = 0.1):
                 l_min = 41
             for plenum_length_1 in range(41,100, int(s*59)):
                 for plenum_length_2 in range(l_min, 100,int(s*75)):
-                    for tube_length in range(150, 350 - (plenum_length_1+plenum_length_2),int(s*200)):
+                    for tube_length in range(150,350 - (plenum_length_1+plenum_length_2),int(s*200)):
                         if tube_number * tube_length <= 3500:
                             for shell_passes in [1,2]:
                                 if shell_passes%2 == 0:
                                     bso_min = 1
                                 else:
                                     bso_min = 41
-                                for baffle_spacing_in in range(41,100,step):
-                                    for baffle_spacing_out in range(bso_min, 100, step):
+                                for baffle_spacing_in in range(41,100,int(s*(100-41))):
+                                    for baffle_spacing_out in range(bso_min, 100, int(s*(100-bso_min))):
                                         for baffle_number in range(10,13):
-                                            for baffle_gap in range(10,60,10):
+                                            for baffle_gap in range(10,60,s*(60-10)):
                                                 #can we do mass constraint here
-                                                    for pitch in range(10,20,10):
-                                                        for crossflow_rows in range(4,5):
-                                                            design_no += 1
-                                                            heat_exchanger = HX(tube_number = tube_number,
-                                                                                baffle_number = baffle_number,
-                                                                                pitch = pitch/1000,
-                                                                                tube_length = tube_length/1000,
-                                                                                plenum_length_1 = plenum_length_1/1000,
-                                                                                plenum_length_2 = plenum_length_2/1000,
-                                                                                baffle_gap = baffle_gap/1000,
-                                                                                baffle_type = baffle_type,
-                                                                                tube_layout = tube_layout,
-                                                                                shell_passes = shell_passes,
-                                                                                tube_bundle_diameter  = (crossflow_rows * pitch + 8e-3)/1000,
-                                                                                tube_passes = tube_passes,
-                                                                                baffle_spacing_in = baffle_spacing_in/1000,
-                                                                                baffle_spacing_out = baffle_spacing_out/1000,
-                                                                                design_year = 2022,
-                                                                                pump_year = 2022,
-                                                                                T_inh = 53.4,
-                                                                                T_inc = 19.2,
-                                                                                leakage = True,
-                                                                                name = None,
-                                                                                co_counter='counter',
-                                                                                approximate_glue_mass=0
-                                                                                )
-                                                            
-                                                            if heat_exchanger.total_mass(heat_exchanger) <= 1.1:
-                                                                hx_designs[f'design {design_no}'] = heat_exchanger
-                                                                performance = hxf.hx_design(heat_exchanger,K_hot,K_cold)
-                                                                hx_data = hx_data.append(performance, ignore_index = True) 
-                                                                hx_data.sort_values(by="Q_LMTD").head()
+                                                    for pitch in range(10,20,s*(20-10)):
+                                                        design_no += 1
+                                                        heat_exchanger = HX(tube_number = tube_number,
+                                                                            baffle_number = baffle_number,
+                                                                            pitch = pitch/1000,
+                                                                            tube_length = tube_length/1000,
+                                                                            plenum_length_1 = plenum_length_1/1000,
+                                                                            plenum_length_2 = plenum_length_2/1000,
+                                                                            baffle_gap = baffle_gap/1000,
+                                                                            baffle_type = baffle_type,
+                                                                            tube_layout = tube_layout,
+                                                                            shell_passes = shell_passes,
+                                                                            tube_bundle_diameter  = 64e-3-pitch/2,
+                                                                            tube_passes = tube_passes,
+                                                                            baffle_spacing_in = baffle_spacing_in/1000,
+                                                                            baffle_spacing_out = baffle_spacing_out/1000,
+                                                                            design_year = 2022,
+                                                                            pump_year = 2022,
+                                                                            T_inh = 53.4,
+                                                                            T_inc = 19.2,
+                                                                            leakage = True,
+                                                                            name = None,
+                                                                            co_counter='counter',
+                                                                            approximate_glue_mass=0
+                                                                            )
+                                                        
+                                                        if heat_exchanger.total_mass(heat_exchanger) <= 1.1:
+                                                            hx_designs[f'design {design_no}'] = heat_exchanger
+                                                            performance = hxf.hx_design(heat_exchanger,K_hot,K_cold)
+                                                            hx_data = hx_data.append(performance, ignore_index = True) 
+                                                            hx_data.sort_values(by="Q_LMTD").head()
 
     #order columns nicely
     hx_data = hx_data[['Name',
