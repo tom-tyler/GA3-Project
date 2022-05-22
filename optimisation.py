@@ -5,6 +5,7 @@ import hx_functions as hxf
 import hx_design as hxd
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the problem
                                 fitness_function=fitness_functions_continuous(3), # fitness function to be maximized
@@ -22,13 +23,18 @@ solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the pr
 #solver.solve()
 
 
-def brute_opt(hx,step):
+def brute_opt(hx,step = 20):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c'
     tube_layout = 't'
 
-    designs = []
+    hx_designs = {}
+    hx_data = pd.DataFrame()
+    K_hot = 1.8
+    K_cold = 1
+    
+    design_no = 0
 
     for tube_number in range(12,15):
         #print(tube_number) #just gives an idea of progress
@@ -46,31 +52,48 @@ def brute_opt(hx,step):
                                         for pitch in range(10,20,10):
                                             for tube_passes in range(1,4):
                                                 for crossflow_rows in range(4,5):
-                                                    hx = HX(tube_number = tube_number,
-                                                            baffle_number = baffle_number,
-                                                            pitch = pitch/1000,
-                                                            tube_passes = tube_passes,
-                                                            tube_length = tube_length/1000,
-                                                            shell_length = shell_length/1000,
-                                                            baffle_gap = baffle_gap/1000,
-                                                            baffle_type = baffle_type,
-                                                            tube_layout = tube_layout,
-                                                            shell_passes = shell_passes,
-                                                            nozzle_bore=20e-3,
-                                                            crossflow_tube_fraction = 1,
-                                                            bypass_area_fraction = 0,
-                                                            seal_strips = seal_strips,
-                                                            crossflow_rows = crossflow_rows,
-                                                            tube_bundle_diameter= 56e-3)
-                                                    if hxf.total_mass(hx) <= 1.1:
-                                                        q = hxd.hx_design(hx)
-                                                        if np.isnan(q) == False:
-                                                            attributes = vars(hx)
-                                                            designs.append((q,list(attributes.items())[0:13]))
+                                                    design_no += 1
+                                                    heat_exchanger = HX(tube_number = tube_number,
+                                                                                           baffle_number = baffle_number,
+                                                                                           pitch = pitch/1000,
+                                                                                           tube_passes = tube_passes,
+                                                                                           tube_length = tube_length/1000,
+                                                                                           shell_length = shell_length/1000,
+                                                                                           baffle_gap = baffle_gap/1000,
+                                                                                           baffle_type = baffle_type,
+                                                                                           tube_layout = tube_layout,
+                                                                                           shell_passes = shell_passes,
+                                                                                           nozzle_bore=20e-3,
+                                                                                           crossflow_tube_fraction = 1,
+                                                                                           bypass_area_fraction = 0,
+                                                                                           seal_strips = seal_strips,
+                                                                                           crossflow_rows = crossflow_rows,
+                                                                                           tube_bundle_diameter= 56e-3)
 
+                                                    if heat_exchanger.total_mass(hx) <= 1.1:
+                                                        hx_designs[f'design {design_no}'] = heat_exchanger
+                                                        performance = hxf.hx_design(hx_design,K_hot,K_cold)
+                                                        hx_data = hx_data.append(performance, ignore_index = True) 
+                                                        hx_data.sort_values(by="Q_LMTD").head()
 
-    designs.sort(reverse = True)
-    return designs[0:2], tube_length
+    #order columns nicely
+    hx_data = hx_data[['Name',
+                'T cold in (C)',
+                'T cold out (C)',
+                'T hot in (C)',
+                'T hot out (C)',
+                'mdot_cold (l/s)',
+                'mdot_hot (l/s)',
+                'dP_cold (bar)',
+                'dP_hot (bar)',
+                'Q_LMTD (kW)',
+                'eff_LMTD',
+                'Q_NTU (kW)',
+                'eff_NTU',
+                'mass (kg)'
+                    ]]
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
+        print(hx_data)
 
 
             
