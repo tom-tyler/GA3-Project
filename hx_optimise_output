@@ -1,4 +1,4 @@
 from hx_functions import brute_opt
 
 
-brute_opt(20)
+brute_opt()

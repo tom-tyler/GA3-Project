@@ -23,7 +23,7 @@ solver = ContinuousGenAlgSolver(n_genes=4, # number of variables defining the pr
 #solver.solve()
 
 
-def brute_opt(step = 20):
+def brute_opt():
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c'
@@ -37,18 +37,18 @@ def brute_opt(step = 20):
     design_no = 0
 
     for tube_passes in range(1,4):
-        for tube_number in range(12,15):
+        for tube_number in range(8,15):
             #print(tube_number) #just gives an idea of progress
             #pitch_max = round(hx.shell.d_inner / tube_number)
             if tube_passes%2 == 0:
                 l_min = 1
             else:
                 l_min = 41
-            for plenum_length_1 in range(41,100, step):
+            for plenum_length_1 in range(41,100, ):
                 for plenum_length_2 in range(l_min, 100,step):
-                    for tube_length in range(150,250,step):
+                    for tube_length in range(150,350 - (plenum_length_1+plenum_length_2),step):
                         if tube_number * tube_length <= 3500:
-                            for shell_passes in range(1,4):
+                            for shell_passes in [1,2]:
                                 if shell_passes%2 == 0:
                                     bso_min = 1
                                 else:
