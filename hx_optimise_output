@@ -1,4 +1,4 @@
-from hx_functions import brute_opt
+from hx_functions import brute_opt, brute_opt_2
 
 
-brute_opt()
+brute_opt_2()
