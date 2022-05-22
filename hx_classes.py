@@ -61,6 +61,7 @@ class HX:
                       T_inc,
                       leakage = True,
                       name = None,
+                      real_data = None,
                       co_counter='counter',
                       approximate_glue_mass=0
                       ):
