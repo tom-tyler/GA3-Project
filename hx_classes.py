@@ -139,10 +139,15 @@ class HX:
         self.shell_length = self.tube_length - 2*self.plate.thickness
         self.nozzle_exit_area = (self.plenum_length_1)*(self.shell.d_inner) #'guess' at area which nozzle is exapnding into
         
-        if (self.baffle_spacing_in < 40e-3) and (self.baffle_spacing_out < 40e-3):
-            self.baffle_spacing = (self.shell_length - self.baffle_spacing_in - self.baffle_spacing_out)/(self.baffle_number - 1) #B, spacing between baffles
+        #if (self.baffle_spacing_in < 40e-3) and (self.baffle_spacing_out < 40e-3):
+        if self.baffle_number == 0:
+            print('please have at least one baffle lol')
+        elif self.baffle_number == 1:
+            self.baffle_spacing_in, self.baffle_spacing_out, self.baffle_spacing = self.shell_length/2, self.shell_length/2, self.shell_length/2
         else:
-            self.baffle_spacing = self.shell_length/(self.baffle_number + 1)
+            self.baffle_spacing = (self.shell_length - self.baffle_spacing_in - self.baffle_spacing_out)/(self.baffle_number - 1) #B, spacing between baffles
+        #else:
+            #self.baffle_spacing = self.shell_length/(self.baffle_number + 1)
         
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
         self.sigma_nozzle = self.nozzle_c_area/(self.nozzle_exit_area) #sigma for nozzle
