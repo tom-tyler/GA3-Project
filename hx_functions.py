@@ -29,8 +29,9 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
     pump_year = hx.pump_year
     accuracy = hx.accuracy
 
-    while (abs(dP_e_h) > accuracy) or (abs(dP_e_c) > accuracy): 
-
+    for mdp_counter in range(100):
+        if (abs(dP_e_h) < accuracy) and (abs(dP_e_c) < accuracy): 
+            break
         #heat capacities
         Cc = m_c*c_w.cp
         Ch = m_h*h_w.cp
@@ -66,12 +67,12 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
 
         if dP_tube_ovr < dP_new_h:
             if abs(dP_e_h) < 1:
-                m_h += abs(dP_e_h)*hx.m_increment
+                m_h += abs(dP_e_h)*hx.m_increment/10
             else:
                 m_h += hx.m_increment
         else:
             if abs(dP_e_h) < 1:
-                m_h -= abs(dP_e_h)*hx.m_increment
+                m_h -= abs(dP_e_h)*hx.m_increment/10
             else:
                 m_h -= hx.m_increment
 
@@ -87,21 +88,20 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
 
         if dP_shell_ovr < dP_new_c:
             if abs(dP_e_c) < 1:
-                m_c += dP_e_c*hx.m_increment
+                m_c += abs(dP_e_c)*hx.m_increment/10
             else:
-                m_c += abs(dP_e_c)#hx.m_increment
+                m_c += hx.m_increment
         else:
             if abs(dP_e_c) < 1:
-                m_c -= dP_e_c*hx.m_increment
+                m_c -= abs(dP_e_c)*hx.m_increment/10
             else:
-                m_c -= abs(dP_e_c)#hx.m_increment
+                m_c -= hx.m_increment
 
         m_counter += 1
 
         #print('m_h: ',m_h, '    m_c: ',m_c, '      dP_e_c: ',dP_e_c, '      dP_e_c: ',dP_e_c)
-        if m_counter > 100:
+        if mdp_counter == 99:
             print('exceeded max iterations for m,dP')
-            break
             
 
     hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
