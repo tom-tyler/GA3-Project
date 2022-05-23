@@ -16,3 +16,5 @@ hxf.brute_opt(n=3)
 
 
 #print(hxf.brute_opt_2())
+
+#hxf.hx_moodle_data()

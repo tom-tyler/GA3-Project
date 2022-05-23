@@ -10,6 +10,8 @@ from numpy import pi
 from math import sqrt
 import openpyxl
 
+run1 = 1
+
 #HYDRAULIC DESIGN
 
 def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
@@ -890,13 +892,11 @@ def hx_moodle_data(K_hot = 1.8, K_cold = 1):
                 'mdot_hot (l/s)',
                 'dP_cold (bar)',
                 'dP_hot (bar)',
-                'Q_LMTD (kW)',
-                'eff_LMTD',
                 'Q_NTU (kW)',
                 'eff_NTU',
                 'mass (kg)'
                     ]]
-    hx_data = hx_data.sort_values(by="Q_LMTD (kW)", ascending=False).head()
+    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
@@ -921,7 +921,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     bg_array = np.linspace(10e-3,30e-3,n)
     p_array = np.linspace(10e-3,20e-3,n)
 
-    packing_density = np.pi/np.sqrt(12) - 0.2
+    packing_density = np.pi/np.sqrt(12) - 0.1
     max_tube_area = np.pi*(32e-3**2)*packing_density
 
     shortest_tube = 150e-3
@@ -929,14 +929,17 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     tube = pipe(6e-3,8e-3,0.20,3.5,shortest_tube)
 
     for pitch in p_array:
+        print('pitch: ',pitch)
 
         eff_tube_area = np.pi*(pitch/2)**2
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        tn_array = np.array(range(8,max_no_tubes + 1))
+        min_no_tubes = int(max_no_tubes*0.4)
+        tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
 
         for tube_passes in tp_array:
+            print('tube_passes: ',tube_passes)
 
             # if tube_passes%2 == 0:
             #     l_min = 10e-3
@@ -945,6 +948,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
             pl2_array = np.array([41e-3]) #np.linspace(l_min,100e-3,n)
         
             for shell_passes in sp_array:
+                print('shell_passes: ',shell_passes)
 
                 # if shell_passes%2 == 0:
                 #     bso_min = 10e-3
@@ -952,7 +956,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                 #     bso_min = 41e-3
                 bso_array = np.array([41e-3]) #np.linspace(bso_min,50e-3,n)
                 for tube_number in tn_array:
-                    #print('tube_number',tube_number)
+                    print('tube_number',tube_number)
 
                     for plenum_length_1 in pl1_array:                        
 
@@ -1013,7 +1017,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                             
 
     #order columns nicely
-    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(1000)[['Name',
+    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(10000)[['Name',
                                                                                 'Q_NTU (kW)',
                                                                                 'eff_NTU',
                                                                                 'mass (kg)',
@@ -1036,7 +1040,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel("hx_data.xlsx", sheet_name="heat_exchanger_data", index=False)
+    hx_data.to_excel(f"hx_data_{run1}.xlsx", sheet_name="heat_exchanger_data", index=False)
 
 def brute_opt_2():
     #brute optimisation but applying some common sense to reduce time
