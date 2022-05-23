@@ -899,8 +899,8 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.4)
-        tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
+        min_no_tubes = int(max_no_tubes*0.2)
+        tn_array = np.array(range(10,15))
 
         for tube_passes in tp_array:
             #print('tube_passes: ',tube_passes)
