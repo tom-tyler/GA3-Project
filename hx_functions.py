@@ -57,9 +57,15 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
 
         if dP_tube_ovr < dP_new_h:
-            m_h += hx.m_increment
+            if abs(dP_e_h) < 1:
+                m_h += abs(dP_e_h)*hx.m_increment
+            else:
+                m_h += hx.m_increment
         else:
-            m_h -= hx.m_increment
+            if abs(dP_e_h) < 1:
+                m_h -= abs(dP_e_h)*hx.m_increment
+            else:
+                m_h -= hx.m_increment
 
         #cold side
         dP_shell = dP_shell_drop(c_w, m_c, hx, K_cold)
@@ -72,13 +78,19 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
 
         if dP_shell_ovr < dP_new_c:
-            m_c += hx.m_increment
+            if abs(dP_e_c) < 1:
+                m_c += dP_e_c*hx.m_increment
+            else:
+                m_c += abs(dP_e_c)#hx.m_increment
         else:
-            m_c -= hx.m_increment
+            if abs(dP_e_c) < 1:
+                m_c -= dP_e_c*hx.m_increment
+            else:
+                m_c -= abs(dP_e_c)#hx.m_increment
 
         m_counter += 1
 
-        #print('m_h: ',m_h, '    m_c: ',m_c, '      dP_e_c: ',dP_e_c)
+        #print('m_h: ',m_h, '    m_c: ',m_c, '      dP_e_c: ',dP_e_c, '      dP_e_c: ',dP_e_c)
         if m_counter > 100:
             print('exceeded max iterations for m,dP')
             break
@@ -666,10 +678,10 @@ def hx_design(hx,K_hot,K_cold):
 
         #HEAT TRANSFER
 
-        heat_transfer_h = Q_h(Ch,T_outh,hx.T_inh)
-        heat_transfer_c = Q_c(Cc,T_outc,hx.T_inc)
-        heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
-        eff = effectiveness(heat_transfer,Cc,Ch,hx.T_inc,hx.T_inh)
+        # heat_transfer_h = Q_h(Ch,T_outh,hx.T_inh)
+        # heat_transfer_c = Q_c(Cc,T_outc,hx.T_inc)
+        # heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
+        # eff = effectiveness(heat_transfer,Cc,Ch,hx.T_inc,hx.T_inh)
 
         heat_transfer_ntu = thermal['q_ntu']
         eff_ntu = thermal['eff_ntu']
