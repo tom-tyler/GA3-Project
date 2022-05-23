@@ -913,13 +913,13 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     
     design_no = 0
 
-    tp_array = np.array([1,2,3,4])
-    sp_array = np.array([1,2])
+    tp_array = np.array([1])
+    sp_array = np.array([1])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array(range(4,10 + 1))
+    bn_array = np.array(range(5,15))
     bg_array = np.linspace(10e-3,30e-3,n)
-    p_array = np.linspace(10e-3,20e-3,n)
+    p_array = np.array([10e-3])#np.linspace(10e-3,10e-3,n)
 
     packing_density = np.pi/np.sqrt(12) - 0.1
     max_tube_area = np.pi*(32e-3**2)*packing_density
@@ -935,8 +935,8 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.4)
-        tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
+        min_no_tubes = int(max_no_tubes*0.2)
+        tn_array = np.array(range(10,15))
 
         for tube_passes in tp_array:
             print('tube_passes: ',tube_passes)
