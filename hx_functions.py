@@ -7,7 +7,8 @@ from matplotlib import pyplot as plt
 from hx_classes import HX, water, pipe
 import pandas as pd
 from numpy import pi
-from math import sqrt 
+from math import sqrt
+import openpyxl
 
 #HYDRAULIC DESIGN
 
@@ -951,6 +952,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                 #     bso_min = 41e-3
                 bso_array = np.array([41e-3]) #np.linspace(bso_min,50e-3,n)
                 for tube_number in tn_array:
+                    #print('tube_number',tube_number)
 
                     for plenum_length_1 in pl1_array:                        
 
