@@ -17,31 +17,39 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
     dP_e_h = 1
     dP_e_c = 1
 
+    #all class variables calculated here so that only need to do them once
+    sigma = hx.sigma
+    sigma_nozzle = hx.sigma_nozzle
+    tube_number = hx.tube_number
+    tube_passes = hx.tube_passes
+    tube_c_area = hx.tube.c_area
+    nozzle_c_area = hx.nozzle_c_area
+    A_shell = hx.A_shell
+    m_increment  = hx.m_increment
+    pump_year = hx.pump_year
+    accuracy = hx.accuracy
 
-    while (abs(dP_e_h) > hx.accuracy) or (abs(dP_e_c) > hx.accuracy): 
+    while (abs(dP_e_h) > accuracy) or (abs(dP_e_c) > accuracy): 
 
         #heat capacities
         Cc = m_c*c_w.cp
         Ch = m_h*h_w.cp
 
         #mass flow in one tube
-        m_tube = m_h/(hx.tube_number/hx.tube_passes)
+        m_tube = m_h/(tube_number/tube_passes)
 
         #various velocities needed
-        V_tube = V(m_tube,h_w,hx.tube.c_area)
-        V_nozzle_h = V(m_h,h_w,hx.nozzle_c_area)
-        V_shell = V(m_c,c_w,hx.A_shell)
-        V_nozzle_c = V(m_c,c_w,hx.nozzle_c_area)
+        V_tube = V(m_tube,h_w,tube_c_area)
+        V_nozzle_h = V(m_h,h_w,nozzle_c_area)
+        V_shell = V(m_c,c_w,A_shell)
+        V_nozzle_c = V(m_c,c_w,nozzle_c_area)
 
-        #sigma, used to find ke and kc
-        sigma = hx.sigma
-        sigma_nozzle = hx.sigma_nozzle
-    
+        
         #pressure drop in a single tube
-        dP_tube = dP_tube_drop(hx,h_w,V_tube) * hx.tube_passes
+        dP_tube = dP_tube_drop(hx,h_w,V_tube) * tube_passes
 
         #pressure drop due to separation leaving tubes
-        dP_in_plus_out = dP_inout(h_w,V_tube,sigma) * hx.tube_passes
+        dP_in_plus_out = dP_inout(h_w,V_tube,sigma) * tube_passes
 
         #pressure drop due to separation leaving nozzle
         dP_in_plus_out_nozzle = dP_inout(h_w,V_nozzle_h,sigma_nozzle)
@@ -52,7 +60,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         #overall pressure drop
         dP_tube_ovr = K_hot*(dP_tube + dP_in_plus_out + dP_in_plus_out_nozzle)  + dP_nozzles_h
 
-        dP_new_h = mdot_dP(m_h,'h',h_w,hx.pump_year)
+        dP_new_h = mdot_dP(m_h,'h',h_w,pump_year)
 
         dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
 
@@ -73,7 +81,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
 
         dP_shell_ovr = dP_shell + dP_nozzles_c
 
-        dP_new_c = mdot_dP(m_c,'c',c_w,hx.pump_year)
+        dP_new_c = mdot_dP(m_c,'c',c_w,pump_year)
 
         dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
 

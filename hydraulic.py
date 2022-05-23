@@ -1,7 +1,5 @@
 import hx_functions as hxf
 
-
-
 def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
 
     m_counter = 0
@@ -9,6 +7,12 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
     m_e_h = 1
     dP_e_c = 1
     m_e_c = 1
+
+    #sigma, used to find ke and kc
+    sigma = hx.sigma
+    sigma_nozzle = hx.sigma_nozzle
+
+    tube_c_area = hx.tube.c_area
 
     while (abs(dP_e_h) > accuracy) and (abs(m_e_h) > accuracy) and (abs(dP_e_c) > accuracy) and (abs(m_e_c) > accuracy):
 
@@ -20,15 +24,11 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         m_tube = m_h/hx.tube_number
 
         #various velocities needed
-        V_tube = hxf.V(m_tube,h_w,hx.tube.c_area)
+        V_tube = hxf.V(m_tube,h_w,tube_c_area)
         V_nozzle_h = hxf.V(m_h,h_w,hx.nozzle_c_area)
         V_shell = hxf.V(m_c,c_w,hx.A_shell)
         V_nozzle_c = hxf.V(m_c,c_w,hx.nozzle_c_area)
 
-        #sigma, used to find ke and kc
-        sigma = hx.sigma
-        sigma_nozzle = hx.sigma_nozzle
-    
         #pressure drop in a single tube
         dP_tube = hxf.dP_tube(hx.tube_length,hx.tube.d_inner,h_w,V_tube)
 
@@ -53,7 +53,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,accuracy,year):
         #print(f'm_h: {m_h},dP: {dP_tube_ovr}')
 
         #cold side
-        N = hx.tube_number/hx.shell_passes
+        #N = hx.tube_number/hx.shell_passes
 
         dP_shell = hxf.dP_shell(c_w, hx.Ncw, hx.Sb, hx.Sm, hx.Sw, hx.Nc, m_c, hx.baffle_number, hx.b1, hx.b2, hx.b3, hx.b4, hx.tube.d_outer, hx.pitch)
         dP_nozzles_c = 2 * hxf.dP_nozzle(V_nozzle_c,c_w)
