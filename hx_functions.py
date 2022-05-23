@@ -635,7 +635,7 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
 def hx_design(hx,K_hot,K_cold):
 
     #initial guesses for mass flowrate:
-    m_h = 0.3 #initial guess for hot mass flow rate
+    m_h = 0.45 #initial guess for hot mass flow rate
     m_c = 0.45 #initial guess for cold mass flow rate
 
     #initial guesses for outlet temperatures
@@ -647,68 +647,30 @@ def hx_design(hx,K_hot,K_cold):
         T_outh = hx.T_inh - 6.2
         T_outc = hx.T_inc + 7.876
 
-    #initial heat transfer parameters
-    heat_transfer,eff = 1,1
-    Q_counter = 0
-    rel_e_h1,rel_e_c1 = 1,1
+
+    #creating hot and cold water objects
+    if (T_outh > 70) or (T_outh < 30):
+        T_outh = 50
+    if (T_outc > 40) or (T_outc < 10):
+        T_outc = 20
+    h_w = water(hx.T_inh,T_outh)
+    c_w = water(hx.T_inc,T_outc)
+
+    #HYDRAULIC DESIGN
+    hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold) #,invalid_hx_flag 
 
 
-    while ((abs(rel_e_c1) > hx.accuracy) or (abs(rel_e_h1) > hx.accuracy)):
+    m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
+    dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
-        #creating hot and cold water objects
-        h_w = water(hx.T_inh,T_outh)
-        c_w = water(hx.T_inc,T_outc)
+    #THERMAL DESIGN
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
+    T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
 
-        #HYDRAULIC DESIGN
-        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold) #,invalid_hx_flag 
+    heat_transfer_ntu = thermal['q_ntu']
+    eff_ntu = thermal['eff_ntu']
+    U = thermal['U']
 
-        #if invalid_hx_flag == True:
-            #break
-
-        m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
-        dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
-        Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
-    
-        #THERMAL DESIGN
-        thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
-        T_outh_new, T_outc_new = thermal['T_outh'], thermal['T_outc']
-
-        rel_e_c1 = (T_outc_new - T_outc)/T_outc
-        rel_e_h1 = (T_outh_new - T_outh)/T_outh
-
-        if T_outc > T_outc_new:
-            T_outc = T_outc_new - hx.T_increment
-        else:
-            T_outc = T_outc_new + hx.T_increment
-            
-        if T_outh > T_outh_new:
-            T_outh = T_outh_new - hx.T_increment
-        else:
-            T_outh = T_outh_new + hx.T_increment
-
-
-        #HEAT TRANSFER
-
-        # heat_transfer_h = Q_h(Ch,T_outh,hx.T_inh)
-        # heat_transfer_c = Q_c(Cc,T_outc,hx.T_inc)
-        # heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
-        # eff = effectiveness(heat_transfer,Cc,Ch,hx.T_inc,hx.T_inh)
-
-        heat_transfer_ntu = thermal['q_ntu']
-        eff_ntu = thermal['eff_ntu']
-        U = thermal['U']
-
-        Q_counter += 1
-        #print(f'q counter: {Q_counter}')
-
-        if Q_counter > 50:
-            print('exceeded max iterations for Q')
-            break
-
-        #now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
-        #need to use lmtd and e-ntu approaches
-
-        #if invalid_hx_flag == False:
     hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
             'T cold in (C)':hx.T_inc,
             'T cold out (C)':T_outc,
@@ -721,12 +683,9 @@ def hx_design(hx,K_hot,K_cold):
             'Q_NTU (kW)':heat_transfer_ntu,
             'eff_NTU':eff_ntu,
             'mass (kg)':hx.total_mass()
-            }                                                        #'Q_LMTD (kW)':heat_transfer, #'eff_LMTD':eff,
-    #else:
-        #hx_dict = {}
-
-    return hx_dict #,invalid_hx_flag
-
+            }                                                        
+            
+    return hx_dict
 
 
 def heat_exchangers(heat_exchanger=None):
@@ -847,6 +806,8 @@ def heat_exchangers(heat_exchanger=None):
         hx_singular[heat_exchanger] = hx_list[heat_exchanger]
         return hx_singular
 
+
+
 def hx_design_basic(hx):
     #initial guesses for mass flowrate:
     m_h = 0.45 #initial guess for hot mass flow rate
@@ -866,6 +827,7 @@ def hx_design_basic(hx):
     Q_counter = 0
     rel_e_h1,rel_e_c1 = 1,1
     q_acc = 0.05
+
 
 
 def hx_moodle_data(K_hot = 1.8, K_cold = 1):
@@ -913,12 +875,12 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     
     design_no = 0
 
-    tp_array = np.array([1,2,3,4])
-    sp_array = np.array([1,2])
+    tp_array = np.array([4])
+    sp_array = np.array([1])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
     bn_array = np.array(range(4,10 + 1))
-    bg_array = np.linspace(10e-3,30e-3,n)
+    bg_array = np.linspace(10e-3,30e-3,int(n/2))
     p_array = np.linspace(10e-3,20e-3,n)
 
     packing_density = np.pi/np.sqrt(12) - 0.1
@@ -982,7 +944,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                 for baffle_gap in bg_array:    
                                                                 
                                                     design_no += 1
-                                                    #print(f'design number = {design_no}, designs = {n_total}')
+                                                    print(f'design number = {design_no}, designs = {n_total}')
                                                     heat_exchanger = HX(tube_number = tube_number,
                                                                         baffle_number = baffle_number,
                                                                         pitch = pitch,
