@@ -879,14 +879,16 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     sp_array = np.array([1])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array(range(4,10 + 1))
+    bn_array = np.array(range(0,10 + 1))   #
     bg_array = np.linspace(10e-3,30e-3,int(n/2))
-    p_array = np.linspace(10e-3,20e-3,n)
+    p_array = np.linspace(10e-3,14e-3,int(n/2))
 
-    packing_density = np.pi/np.sqrt(12) - 0.1
-    max_tube_area = np.pi*(32e-3**2)*packing_density
+    packing_density = np.pi/np.sqrt(12)
+    r = 64e-3/2
+    segment_area = r**2 * np.arccos(0.8660) - (0.8660*r)*(2*r*0.13397*r - (0.13397*r)**2)**0.5
+    max_tube_area = (np.pi*(r**2) - 6*segment_area)*packing_density
 
-    shortest_tube = 150e-3
+    shortest_tube = 100e-3
 
     tube = pipe(6e-3,8e-3,0.20,3.5,shortest_tube)
 
@@ -901,7 +903,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
 
         for tube_passes in tp_array:
-            print('tube_passes: ',tube_passes)
+            #print('tube_passes: ',tube_passes)
 
             # if tube_passes%2 == 0:
             #     l_min = 10e-3
@@ -910,7 +912,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
             pl2_array = np.array([41e-3]) #np.linspace(l_min,100e-3,n)
         
             for shell_passes in sp_array:
-                print('shell_passes: ',shell_passes)
+                #print('shell_passes: ',shell_passes)
 
                 # if shell_passes%2 == 0:
                 #     bso_min = 10e-3
@@ -918,7 +920,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                 #     bso_min = 41e-3
                 bso_array = np.array([41e-3]) #np.linspace(bso_min,50e-3,n)
                 for tube_number in tn_array:
-                    print('tube_number',tube_number)
+                    #print('tube_number',tube_number)
 
                     for plenum_length_1 in pl1_array:                        
 
@@ -944,7 +946,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                 for baffle_gap in bg_array:    
                                                                 
                                                     design_no += 1
-                                                    print(f'design number = {design_no}, designs = {n_total}')
+                                                    #print(f'design number = {design_no}, designs = {n_total}')
                                                     heat_exchanger = HX(tube_number = tube_number,
                                                                         baffle_number = baffle_number,
                                                                         pitch = pitch,
