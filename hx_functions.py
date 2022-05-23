@@ -1006,8 +1006,9 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                         hx_designs[f'design {design_no}'] = heat_exchanger
                                                         performance = hx_design(heat_exchanger,K_hot,K_cold) #,invalid_hx_flag
                                                         design = vars(heat_exchanger)
+                                                        performance.update(design)
                                                         #if invalid_hx_flag == False:
-                                                        hx_data = hx_data.append(performance, design, ignore_index = True) 
+                                                        hx_data = hx_data.append(performance, ignore_index = True) 
                                                             
 
     #order columns nicely
@@ -1097,6 +1098,7 @@ def brute_opt_2():
                                         print('pass')
                                         hx_designs[f'design {design_no}'] = heat_exchanger
                                         performance = hx_design_basic(heat_exchanger)
+                                        
                                         hx_data = hx_data.append(performance, vars(heat_exchanger)[0:13])
     
     hx_data.sort(reverse = True)
