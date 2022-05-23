@@ -17,6 +17,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
     dP_e_h = 1
     dP_e_c = 1
 
+
     while (abs(dP_e_h) > hx.accuracy) or (abs(dP_e_c) > hx.accuracy): 
 
         #heat capacities
@@ -56,9 +57,9 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
 
         if dP_tube_ovr < dP_new_h:
-            m_h += hx.accuracy
+            m_h += hx.m_increment
         else:
-            m_h -= hx.accuracy
+            m_h -= hx.m_increment
 
         #cold side
         dP_shell = dP_shell_drop(c_w, m_c, hx, K_cold)
@@ -71,11 +72,13 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
         dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
 
         if dP_shell_ovr < dP_new_c:
-            m_c += hx.accuracy
+            m_c += hx.m_increment
         else:
-            m_c -= hx.accuracy
+            m_c -= hx.m_increment
 
         m_counter += 1
+
+        #print('m_h: ',m_h, '    m_c: ',m_c, '      dP_e_c: ',dP_e_c)
         if m_counter > 100:
             print('exceeded max iterations for m,dP')
             break
@@ -112,9 +115,9 @@ def dP_shell_drop(liquid, m_c, hx, K_cold):
     nb = hx.baffle_number
 
     dPi = dP_ideal(m_c, liquid, hx)
-    #print('dPi:',dPi)
+   
     dPw = dPw_ideal(m_c, liquid, hx)
-    #print('dPw:',dPw)
+  
     dPs = ((nb - 1)*dPi*hx.Rb + nb*dPw)*hx.Rl*K_cold * hx.shell_passes
     dPe = 2*dPi*(1 + hx.Ncw/hx.Nc)*hx.Rb*hx.Rs 
     dP = dPe + dPs
@@ -287,42 +290,45 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
 
     q_ntu = qmax * e
 
+    T_outc = q_ntu/Cc + T_inc
+    T_outh = T_inh - q_ntu/Ch
+
 
     #now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
 
-    T_outc_new,T_outh_new = 1,1
-    T_counter = 0
-    rel_e_h,rel_e_c = 1,1
+    # T_outc_new,T_outh_new = 1,1
+    # T_counter = 0
+    # rel_e_h,rel_e_c = 1,1
 
-    while (abs(rel_e_c) > hx.accuracy) or (abs(rel_e_h) > hx.accuracy):
+    # while (abs(rel_e_c) > hx.accuracy) or (abs(rel_e_h) > hx.accuracy):
 
-        F = correction_factor(T_inc,T_inh,T_outc,T_outh,hx)
+    #     F = correction_factor(T_inc,T_inh,T_outc,T_outh,hx)
 
-        #might need to think about co/counterflow here for when shell passes > 1
+    #     #might need to think about co/counterflow here for when shell passes > 1
 
-        T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
+    #     T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
     
-        T_outh_new = fsolve(lambda T_outh: (T_inh - T_outh) - (1/Ch)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outh)[0]
+    #     T_outh_new = fsolve(lambda T_outh: (T_inh - T_outh) - (1/Ch)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outh)[0]
         
-        rel_e_c = (T_outc_new - T_outc)/T_outc
-        rel_e_h = (T_outh_new - T_outh)/T_outh
+    #     rel_e_c = (T_outc_new - T_outc)/T_outc
+    #     rel_e_h = (T_outh_new - T_outh)/T_outh
 
-        if T_outc > T_outc_new:
-            T_outc = T_outc_new - hx.accuracy
-        else:
-            T_outc = T_outc_new + hx.accuracy
+    #     if T_outc > T_outc_new:
+    #         T_outc = T_outc_new - hx.accuracy
+    #     else:
+    #         T_outc = T_outc_new + hx.accuracy
 
-        if T_outh > T_outh_new:
-            T_outh = T_outh_new - hx.accuracy
-        else:
-            T_outh = T_outh_new + hx.accuracy
-        #T_outc = (T_outc_new + T_outc)/2
-        #T_outh = (T_outh_new + T_outh)/2
-        T_counter += 1
+    #     if T_outh > T_outh_new:
+    #         T_outh = T_outh_new - hx.accuracy
+    #     else:
+    #         T_outh = T_outh_new + hx.accuracy
+    #     #T_outc = (T_outc_new + T_outc)/2
+    #     #T_outh = (T_outh_new + T_outh)/2
+    #     T_counter += 1
 
-        if T_counter > 100:
-            print('exceeded max iterations for T')
-            break
+    #     if T_counter > 100:
+    #         print('exceeded max iterations for T')
+    #         break
 
     thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
     return thermal
@@ -642,20 +648,20 @@ def hx_design(hx,K_hot,K_cold):
     
         #THERMAL DESIGN
         thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
-        T_outh_new,T_outc_new = thermal['T_outh'], thermal['T_outc']
+        T_outh_new, T_outc_new = thermal['T_outh'], thermal['T_outc']
 
         rel_e_c1 = (T_outc_new - T_outc)/T_outc
         rel_e_h1 = (T_outh_new - T_outh)/T_outh
 
         if T_outc > T_outc_new:
-            T_outc = T_outc_new - hx.accuracy
+            T_outc = T_outc_new - hx.T_increment
         else:
-            T_outc = T_outc_new + hx.accuracy
+            T_outc = T_outc_new + hx.T_increment
             
         if T_outh > T_outh_new:
-            T_outh = T_outh_new - hx.accuracy
+            T_outh = T_outh_new - hx.T_increment
         else:
-            T_outh = T_outh_new + hx.accuracy
+            T_outh = T_outh_new + hx.T_increment
 
 
         #HEAT TRANSFER
