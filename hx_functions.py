@@ -8,7 +8,6 @@ from hx_classes import HX, water, pipe
 import pandas as pd
 from numpy import pi
 from math import sqrt 
-import openpyxl
 
 #HYDRAULIC DESIGN
 
@@ -1006,21 +1005,34 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                     if heat_exchanger.total_mass() <= 1.1:
                                                         hx_designs[f'design {design_no}'] = heat_exchanger
                                                         performance = hx_design(heat_exchanger,K_hot,K_cold) #,invalid_hx_flag
+                                                        design = vars(heat_exchanger)
                                                         #if invalid_hx_flag == False:
-                                                        hx_data = hx_data.append(performance, vars(heat_exchanger)) 
+                                                        hx_data = hx_data.append(performance, design, ignore_index = True) 
                                                             
 
     #order columns nicely
-    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(100)
-    #hx_data = hx_data[['Name',
-               # 'Q_NTU (kW)',
-                #'eff_NTU',
-                #'mass (kg)'
-                 #   ]]
+    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(10)
+    hx_data = hx_data[['Name',
+                'Q_NTU (kW)',
+                'eff_NTU',
+                'mass (kg)'
+                'tube_number',
+                'baffle_number',
+                'pitch',
+                'tube_length',
+                'plenum_length_1',
+                'plenum_length_2',
+                'baffle_gap',
+                'baffle_type',
+                'tube_layout',
+                'shell_passes',
+                'tube_bundle_diameter',
+                'tube_passes',
+                'baffle_spacing_in',
+                'baffle_spacing_out'
+                ]]
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
-
-    hx_data.to_excel("hx_data.xlsx", sheet_name="heat_exchanger_data", index=False)
 
 
 def brute_opt_2():
