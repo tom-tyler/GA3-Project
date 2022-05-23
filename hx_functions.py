@@ -10,7 +10,7 @@ from numpy import pi
 from math import sqrt
 import openpyxl
 
-run1 = 1
+run1 = 'run_b'
 
 #HYDRAULIC DESIGN
 
@@ -876,12 +876,12 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     design_no = 0
 
     tp_array = np.array([4])
-    sp_array = np.array([1])
+    sp_array = np.array([1,2])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
     bn_array = np.array(range(0,10 + 1))   #
-    bg_array = np.linspace(10e-3,30e-3,int(n/2))
-    p_array = np.linspace(10e-3,14e-3,int(n/2))
+    bg_array = np.linspace(10e-3,30e-3,int(n))
+    p_array = np.linspace(10e-3,14e-3,int(n))
 
     packing_density = np.pi/np.sqrt(12)
     r = 64e-3/2
@@ -899,8 +899,8 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.2)
-        tn_array = np.array(range(10,15))
+        min_no_tubes = int(max_no_tubes*0.4)
+        tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
 
         for tube_passes in tp_array:
             #print('tube_passes: ',tube_passes)
@@ -981,25 +981,25 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                             
 
     #order columns nicely
-    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(10000)[['Name',
-                                                                                'Q_NTU (kW)',
-                                                                                'eff_NTU',
-                                                                                'mass (kg)',
-                                                                                'tube_number',
-                                                                                'baffle_number',
-                                                                                'pitch',
-                                                                                'tube_length',
-                                                                                'plenum_length_1',
-                                                                                'plenum_length_2',
-                                                                                'baffle_gap',
-                                                                                'baffle_type',
-                                                                                'tube_layout',
-                                                                                'shell_passes',
-                                                                                'tube_bundle_diameter',
-                                                                                'tube_passes',
-                                                                                'baffle_spacing_in',
-                                                                                'baffle_spacing_out'
-                                                                                ]]
+    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False)[['Name',
+                                                                    'Q_NTU (kW)',
+                                                                    'eff_NTU',
+                                                                    'mass (kg)',
+                                                                    'tube_number',
+                                                                    'baffle_number',
+                                                                    'pitch',
+                                                                    'tube_length',
+                                                                    'plenum_length_1',
+                                                                    'plenum_length_2',
+                                                                    'baffle_gap',
+                                                                    'baffle_type',
+                                                                    'tube_layout',
+                                                                    'shell_passes',
+                                                                    'tube_bundle_diameter',
+                                                                    'tube_passes',
+                                                                    'baffle_spacing_in',
+                                                                    'baffle_spacing_out'
+                                                                    ]]
     hx_data = hx_data
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
