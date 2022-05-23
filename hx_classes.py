@@ -143,6 +143,7 @@ class HX:
         if self.baffle_number == 0:
             print('please have at least one baffle lol')
         elif self.baffle_number == 1:
+            print('please have at least one baffle lol')
             self.baffle_spacing_in, self.baffle_spacing_out, self.baffle_spacing = self.shell_length/2, self.shell_length/2, self.shell_length/2
         else:
             self.baffle_spacing = (self.shell_length - self.baffle_spacing_in - self.baffle_spacing_out)/(self.baffle_number - 1) #B, spacing between baffles

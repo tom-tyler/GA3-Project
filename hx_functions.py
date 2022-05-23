@@ -10,7 +10,7 @@ from numpy import pi
 from math import sqrt
 import openpyxl
 
-run1 = 'run_b'
+run1 = 'run_c'
 
 #HYDRAULIC DESIGN
 
@@ -879,18 +879,17 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     sp_array = np.array([2])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array(range(1,6+1))   #
-    bg_array = np.linspace(10e-3,30e-3,int(n))
-    p_array = np.array([10e-3]) #np.linspace(10e-3,14e-3,int(n))
+    bn_array = np.array(range(2,10+1))   #PLEASE DONT HAVE ZERO OR 1 BAFFLE  
+    bg_array = np.array([15e-3,20e-3,25e-3])
+    p_array = np.array([10e-3,11e-3,12e-3,13e-3,14e-3]) #np.array([10e-3]) 
 
     packing_density = np.pi/np.sqrt(12)
     r = 64e-3/2
     segment_area = r**2 * np.arccos(0.8660) - (0.8660*r)*(2*r*0.13397*r - (0.13397*r)**2)**0.5
-    max_tube_area = (np.pi*(r**2) - 6*segment_area)*(packing_density - 0.05)
+    max_tube_area = (np.pi*(r**2) - 6*segment_area)*(packing_density - 0.1)
 
-    shortest_tube = 50e-3
-
-    tube = pipe(6e-3,8e-3,0.20,3.5,shortest_tube)
+    initial_length = 85e-3
+    tube = pipe(6e-3,8e-3,0.20,3.5,initial_length)
 
     for pitch in p_array:
         print('pitch: ',pitch)
@@ -899,7 +898,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.6)
+        min_no_tubes = int(max_no_tubes*0.5)
         tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
 
         for tube_passes in tp_array:
@@ -909,7 +908,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
             #     l_min = 10e-3
             # else:
             #     l_min = 41e-3
-            pl2_array = np.array([41e-3]) #np.linspace(l_min,100e-3,n)
+            pl2_array = np.array([40e-3]) #np.linspace(l_min,100e-3,n)  20e-3,30e-3,
         
             for shell_passes in sp_array:
                 #print('shell_passes: ',shell_passes)
@@ -918,27 +917,29 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                 #     bso_min = 10e-3
                 # else:
                 #     bso_min = 41e-3
-                bso_array = np.array([41e-3]) #np.linspace(bso_min,50e-3,n)
+                bso_array = np.array([40e-3]) #np.linspace(bso_min,50e-3,n)  20e-3,30e-3,
                 for tube_number in tn_array:
                     #print('tube_number',tube_number)
 
                     for plenum_length_1 in pl1_array:                        
 
                         for plenum_length_2 in pl2_array:
+
+                            for baffle_spacing_in in bsi_array:
+
+                                for baffle_spacing_out in bso_array:
                     
-                            max_tube_length = (0.35 - plenum_length_1 - plenum_length_2)
-                            tl_array = np.linspace(shortest_tube,max_tube_length,n)
-                            n_total = tp_array.size*sp_array.size*tl_array.size*pl1_array.size*bsi_array.size*bn_array.size*bg_array.size*p_array.size*bso_array.size*tn_array.size*pl2_array.size
+                                    max_tube_length = (0.35 - plenum_length_1 - plenum_length_2)
+                                    min_tube_length = baffle_spacing_in + baffle_spacing_out + 0.01
+                                    tl_array = np.linspace(min_tube_length,max_tube_length,n)
+                                    n_total = tp_array.size*sp_array.size*tl_array.size*pl1_array.size*bsi_array.size*bn_array.size*bg_array.size*p_array.size*bso_array.size*tn_array.size*pl2_array.size
 
-                            for tube_length in tl_array:
+                                    for tube_length in tl_array:
 
-                                tube.l = tube_length
+                                        tube.l = tube_length
 
-                                if (tube_number * tube_length <= 3.5) and (tube_number * tube.mass <= 1.1):               
-                                
-                                    for baffle_spacing_in in bsi_array:
-
-                                        for baffle_spacing_out in bso_array:
+                                        if (tube_number * tube_length <= 3.5) and (tube_number * tube.mass <= 1.1):               
+                                        
 
                                             for baffle_number in bn_array:
                                                 #print('baffle_number',baffle_number)
@@ -978,7 +979,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                         performance.update(design)
                                                         #if invalid_hx_flag == False:
                                                         hx_data = hx_data.append(performance, design) 
-                                                            
+                                                    
 
     #order columns nicely
     hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False)[['Name',
