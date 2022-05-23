@@ -1,0 +1,98 @@
+def hx_design(hx,K_hot,K_cold):
+
+    #initial guesses for mass flowrate:
+    m_h = 0.3 #initial guess for hot mass flow rate
+    m_c = 0.45 #initial guess for cold mass flow rate
+
+    #initial guesses for outlet temperatures
+    T_outh = hx.T_inh - 9.103
+    T_outc = hx.T_inc + 10.645
+    R = (hx.T_inc - T_outc)/(T_outh - hx.T_inh)
+
+    if (abs(1-R) <0.1):
+        T_outh = hx.T_inh - 6.2
+        T_outc = hx.T_inc + 7.876
+
+    #initial heat transfer parameters
+    heat_transfer,eff = 1,1
+    Q_counter = 0
+    rel_e_h1,rel_e_c1 = 1,1
+
+
+    #while ((abs(rel_e_c1) > hx.accuracy) or (abs(rel_e_h1) > hx.accuracy)):
+
+    #creating hot and cold water objects
+    if (T_outh > 70) or (T_outh < 30):
+        T_outh = 50
+    if (T_outc > 70) or (T_outc < 30):
+        T_outc = 20
+    h_w = water(hx.T_inh,T_outh)
+    c_w = water(hx.T_inc,T_outc)
+
+    #HYDRAULIC DESIGN
+    hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold) #,invalid_hx_flag 
+
+    #if invalid_hx_flag == True:
+        #break
+
+    m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
+    dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
+    Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
+
+    #THERMAL DESIGN
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
+    #T_outh_new, T_outc_new = thermal['T_outh'], thermal['T_outc']
+
+    # rel_e_c1 = (T_outc_new - T_outc)/T_outc
+    # rel_e_h1 = (T_outh_new - T_outh)/T_outh
+
+    # if T_outc > T_outc_new:
+    #     T_outc = T_outc_new - hx.T_increment
+    # else:
+    #     T_outc = T_outc_new + hx.T_increment
+        
+    # if T_outh > T_outh_new:
+    #     T_outh = T_outh_new - hx.T_increment
+    # else:
+    #     T_outh = T_outh_new + hx.T_increment
+
+
+    #HEAT TRANSFER
+
+    # heat_transfer_h = Q_h(Ch,T_outh,hx.T_inh)
+    # heat_transfer_c = Q_c(Cc,T_outc,hx.T_inc)
+    # heat_transfer = np.mean([heat_transfer_c,heat_transfer_h])
+    # eff = effectiveness(heat_transfer,Cc,Ch,hx.T_inc,hx.T_inh)
+
+    heat_transfer_ntu = thermal['q_ntu']
+    eff_ntu = thermal['eff_ntu']
+    U = thermal['U']
+
+        #Q_counter += 1
+        #print(f'q counter: {Q_counter}')
+
+        # if Q_counter > 50:
+        #     print('exceeded max iterations for Q')
+        #     break
+
+        #now loop over entire thing again using these 4 values to get new property values to make answer more accurate. when this converges, can find effectiveness and Q
+        #need to use lmtd and e-ntu approaches
+
+        #if invalid_hx_flag == False:
+    hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
+            'T cold in (C)':hx.T_inc,
+            'T cold out (C)':T_outc,
+            'T hot in (C)':hx.T_inh,
+            'T hot out (C)':T_outh,
+            'mdot_cold (l/s)':m_c/(c_w.rho/1000),
+            'mdot_hot (l/s)':m_h/(h_w.rho/1000),
+            'dP_cold (bar)':dP_cold/1e5,
+            'dP_hot (bar)':dP_hot/1e5,
+            'Q_NTU (kW)':heat_transfer_ntu,
+            'eff_NTU':eff_ntu,
+            'mass (kg)':hx.total_mass()
+            }                                                        #'Q_LMTD (kW)':heat_transfer, #'eff_LMTD':eff,
+    #else:
+        #hx_dict = {}
+
+    return hx_dict #,invalid_hx_flag
