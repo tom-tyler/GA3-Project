@@ -1006,16 +1006,16 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                         hx_designs[f'design {design_no}'] = heat_exchanger
                                                         performance = hx_design(heat_exchanger,K_hot,K_cold) #,invalid_hx_flag
                                                         #if invalid_hx_flag == False:
-                                                        hx_data = hx_data.append(performance, ignore_index = True) 
+                                                        hx_data = hx_data.append(performance, vars(heat_exchanger)) 
                                                             
 
     #order columns nicely
     hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(10)
-    hx_data = hx_data[['Name',
-                'Q_NTU (kW)',
-                'eff_NTU',
-                'mass (kg)'
-                    ]]
+    #hx_data = hx_data[['Name',
+               # 'Q_NTU (kW)',
+                #'eff_NTU',
+                #'mass (kg)'
+                 #   ]]
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
