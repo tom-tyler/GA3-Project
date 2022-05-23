@@ -715,12 +715,10 @@ def hx_design(hx,K_hot,K_cold):
             'mdot_hot (l/s)':m_h/(h_w.rho/1000),
             'dP_cold (bar)':dP_cold/1e5,
             'dP_hot (bar)':dP_hot/1e5,
-            'Q_LMTD (kW)':heat_transfer,
-            'eff_LMTD':eff,
             'Q_NTU (kW)':heat_transfer_ntu,
             'eff_NTU':eff_ntu,
             'mass (kg)':hx.total_mass()
-            }
+            }                                                        #'Q_LMTD (kW)':heat_transfer, #'eff_LMTD':eff,
     #else:
         #hx_dict = {}
 
@@ -974,12 +972,12 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                         for baffle_spacing_out in bso_array:
 
                                             for baffle_number in bn_array:
-                                                print('baffle_number',baffle_number)
+                                                #print('baffle_number',baffle_number)
 
                                                 for baffle_gap in bg_array:    
                                                                 
                                                     design_no += 1
-                                                    print(f'design number = {design_no}, designs = {n_total}')
+                                                    #print(f'design number = {design_no}, designs = {n_total}')
                                                     heat_exchanger = HX(tube_number = tube_number,
                                                                         baffle_number = baffle_number,
                                                                         pitch = pitch,
@@ -1012,18 +1010,8 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                             
 
     #order columns nicely
-    hx_data = hx_data.sort_values(by="Q_LMTD (kW)", ascending=False).head()
+    hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head(10)
     hx_data = hx_data[['Name',
-                'T cold in (C)',
-                'T cold out (C)',
-                'T hot in (C)',
-                'T hot out (C)',
-                'mdot_cold (l/s)',
-                'mdot_hot (l/s)',
-                'dP_cold (bar)',
-                'dP_hot (bar)',
-                'Q_LMTD (kW)',
-                'eff_LMTD',
                 'Q_NTU (kW)',
                 'eff_NTU',
                 'mass (kg)'
