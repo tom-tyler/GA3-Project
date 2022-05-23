@@ -876,19 +876,19 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     design_no = 0
 
     tp_array = np.array([4])
-    sp_array = np.array([1,2])
+    sp_array = np.array([2])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array(range(0,10 + 1))   #
+    bn_array = np.array(range(1,6+1))   #
     bg_array = np.linspace(10e-3,30e-3,int(n))
-    p_array = np.linspace(10e-3,14e-3,int(n))
+    p_array = np.array([10e-3]) #np.linspace(10e-3,14e-3,int(n))
 
     packing_density = np.pi/np.sqrt(12)
     r = 64e-3/2
     segment_area = r**2 * np.arccos(0.8660) - (0.8660*r)*(2*r*0.13397*r - (0.13397*r)**2)**0.5
-    max_tube_area = (np.pi*(r**2) - 6*segment_area)*packing_density
+    max_tube_area = (np.pi*(r**2) - 6*segment_area)*(packing_density - 0.05)
 
-    shortest_tube = 100e-3
+    shortest_tube = 50e-3
 
     tube = pipe(6e-3,8e-3,0.20,3.5,shortest_tube)
 
@@ -899,7 +899,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.4)
+        min_no_tubes = int(max_no_tubes*0.6)
         tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
 
         for tube_passes in tp_array:
