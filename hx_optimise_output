@@ -2,7 +2,7 @@ import hx_functions as hxf
 from hx_classes import water
 
 
-hxf.brute_opt(n=9)
+hxf.brute_opt(n=3)
 # h_w = water(55,45)
 # c_w = water(20,25)
 
@@ -16,3 +16,5 @@ hxf.brute_opt(n=9)
 
 
 #print(hxf.brute_opt_2())
+
+#hxf.hx_moodle_data()
