@@ -10,7 +10,7 @@ from numpy import pi
 from math import sqrt
 import openpyxl
 
-run1 = 'run_c'
+
 
 #HYDRAULIC DESIGN
 
@@ -595,6 +595,9 @@ def mdot_dP(m_dot,side,liquid,year):
 
     # if dP_ovr > 0.65e5:
     #     dP_ovr = 0.65e5
+    #print(mdot_dP_array[-1,0])
+    if m_dot < mdot_dP_array[-1,0]:
+        m_dot = mdot_dP_array[-1,0] + 0.01
 
     #mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'linear')
     dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
@@ -874,14 +877,17 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     hx_data = pd.DataFrame()
     
     design_no = 0
+    run1 = 'run_h'
 
     tp_array = np.array([4])
     sp_array = np.array([2])
     pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
     bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array(range(2,10+1))   #PLEASE DONT HAVE ZERO OR 1 BAFFLE  
-    bg_array = np.array([15e-3,20e-3,25e-3])
-    p_array = np.array([10e-3,11e-3,12e-3,13e-3,14e-3]) #np.array([10e-3]) 
+    bn_array = np.array([6])   #PLEASE DONT HAVE ZERO OR 1 BAFFLE  
+    bg_array = np.array([20e-3]) #15e-3,20e-3,
+    p_array = np.array([10e-3])
+    pl2_array = np.array([10e-3,15e-3,20e-3,25e-3])
+    bso_array = np.array([41e-3])
 
     packing_density = np.pi/np.sqrt(12)
     r = 64e-3/2
@@ -898,8 +904,9 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        min_no_tubes = int(max_no_tubes*0.5)
-        tn_array = np.array(range(min_no_tubes,max_no_tubes + 1))
+        max_no_tubes = 24
+        min_no_tubes = int(max_no_tubes*0.4)
+        tn_array = np.array(range(int(min_no_tubes),int(max_no_tubes + 1)))
 
         for tube_passes in tp_array:
             #print('tube_passes: ',tube_passes)
@@ -908,7 +915,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
             #     l_min = 10e-3
             # else:
             #     l_min = 41e-3
-            pl2_array = np.array([40e-3]) #np.linspace(l_min,100e-3,n)  20e-3,30e-3,
+             #np.linspace(l_min,100e-3,n)  20e-3,30e-3,
         
             for shell_passes in sp_array:
                 #print('shell_passes: ',shell_passes)
@@ -917,7 +924,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                 #     bso_min = 10e-3
                 # else:
                 #     bso_min = 41e-3
-                bso_array = np.array([40e-3]) #np.linspace(bso_min,50e-3,n)  20e-3,30e-3,
+                 #np.linspace(bso_min,50e-3,n)  20e-3,30e-3,
                 for tube_number in tn_array:
                     #print('tube_number',tube_number)
 
@@ -938,7 +945,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
 
                                         tube.l = tube_length
 
-                                        if (tube_number * tube_length <= 3.5) and (tube_number * tube.mass <= 1.1):               
+                                        if (tube_number * (tube_length+0.003) <= 3.5) and (tube_number * tube.mass <= 1.1):               
                                         
 
                                             for baffle_number in bn_array:
@@ -967,9 +974,7 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
                                                                         T_inh = 53.4,
                                                                         T_inc = 19.2,
                                                                         leakage = True,
-                                                                        name = f'design number = {design_no}',
-                                                                        co_counter='counter',
-                                                                        approximate_glue_mass=0
+                                                                        name = f'design number = {design_no}'
                                                                         )
                                                     
                                                     if heat_exchanger.total_mass() <= 1.1:
@@ -1060,9 +1065,7 @@ def brute_opt_2():
                                                         T_inh = 53.4,
                                                         T_inc = 19.2,
                                                         leakage = True,
-                                                        name = None,
-                                                        co_counter='counter',
-                                                        approximate_glue_mass=0
+                                                        name = None
                                                         )
                                     
                                     if heat_exchanger.total_mass() <= 1.1:

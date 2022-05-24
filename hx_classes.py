@@ -62,8 +62,6 @@ class HX:
                       leakage = True,
                       name = None,
                       real_data = None,
-                      co_counter='counter',
-                      approximate_glue_mass=0
                       ):
 
         #accuracy of calculations
@@ -92,9 +90,6 @@ class HX:
 
         self.shell_passes = shell_passes #number of shell passes
         self.tube_passes = tube_passes
-
-        self.co_counter = co_counter #counter or co flow. for counter = 'counter', for co = 'co'
-        self.approximate_glue_mass = approximate_glue_mass #approximate mass of glue (may move this to fixed parameters)
 
 
         #creating tube,shell,plate and baffle objects
@@ -212,8 +207,8 @@ class HX:
             self.b4 = 0.378
             self.area_adjustment_factor = 1/(2**0.5)
 
-        self.theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)/self.shell_passes #may need to divide by shell passes
-        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))/self.shell_passes #baffle window angle
+        self.theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)/self.shell_passes
+        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))/self.shell_passes
         self.Fw = (1/(2*np.pi))*(self.theta_ctl - np.sin(self.theta_ctl))
         self.Fc = 1 - 2*self.Fw
         self.A_tubes = self.tube_number * self.Fw * (np.pi*self.tube.d_outer**2/4)
@@ -264,6 +259,5 @@ class HX:
         self.total_baffle_mass = self.baffle_number*self.baffle.mass
         self.total_plate_mass = self.plate_number*self.plate.mass
         self.total_divider_mass = self.divider_no*self.divider.mass + self.plen_dividers*self.plen_divider.mass
-        #self.total_mass_supports = 
 
         return self.total_baffle_mass + self.total_tube_mass + self.total_nozzle_mass + self.total_plate_mass + self.total_shell_mass + self.total_divider_mass
