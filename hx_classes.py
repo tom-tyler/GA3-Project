@@ -225,8 +225,10 @@ class HX:
         #clearances
         self.delta_tb = 1e-4
         self.delta_sb = 2e-4
-
-        self.Rs = 0.5*((self.baffle_spacing/self.baffle_spacing_in)**(1.8) + (self.baffle_spacing/self.baffle_spacing_out)**(1.8))
+        if shell_passes == 2:
+            self.Rs = ((self.baffle_spacing/self.baffle_spacing_in)**(1.8))
+        elif shell_passes == 1:
+            self.Rs = 0.5*((self.baffle_spacing/self.baffle_spacing_in)**(1.8) + (self.baffle_spacing/self.baffle_spacing_out)**(1.8))
         self.Rb = np.exp(-3.7*(self.Sb/self.Sm))
 
         if self.leakage == True:

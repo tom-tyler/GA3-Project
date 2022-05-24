@@ -14,7 +14,7 @@ import openpyxl
 
 #HYDRAULIC DESIGN
 
-def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1.8,K_cold = 1):
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1,K_cold = 1):
     
     m_counter = 0
     dP_e_h = 1
@@ -833,7 +833,7 @@ def hx_design_basic(hx):
 
 
 
-def hx_moodle_data(K_hot = 1.8, K_cold = 1):
+def hx_moodle_data(K_hot = 1, K_cold = 1):
 
 
     hx_list = heat_exchangers()
@@ -867,7 +867,7 @@ def hx_moodle_data(K_hot = 1.8, K_cold = 1):
 
 
 
-def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
+def brute_opt(n = 10,K_hot = 1,K_cold = 1):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c' #assume this is best
@@ -877,17 +877,17 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
     hx_data = pd.DataFrame()
     
     design_no = 0
-    run1 = 'run_h'
+    run1 = 'run_l'
 
     tp_array = np.array([4])
     sp_array = np.array([2])
-    pl1_array = np.array([41e-3]) #np.linspace(41e-3,100e-3,n)
-    bsi_array = np.array([41e-3]) #np.linspace(41e-3,50e-3,n)
-    bn_array = np.array([6])   #PLEASE DONT HAVE ZERO OR 1 BAFFLE  
-    bg_array = np.array([20e-3]) #15e-3,20e-3,
+    pl1_array = np.array([55e-3]) #np.linspace(41e-3,100e-3,n)
+    bsi_array = np.array([40e-3]) #np.linspace(41e-3,50e-3,n)
+    bn_array = np.array([6,7,8,9,10,11,12,13,14])   #PLEASE DONT HAVE ZERO OR 1 BAFFLE  
+    bg_array = np.array([10e-3,15e-3,20e-3]) #15e-3,20e-3,
     p_array = np.array([10e-3])
-    pl2_array = np.array([10e-3,15e-3,20e-3,25e-3])
-    bso_array = np.array([41e-3])
+    pl2_array = np.array([20e-3])
+    bso_array = np.array([20e-3])
 
     packing_density = np.pi/np.sqrt(12)
     r = 64e-3/2
@@ -904,9 +904,10 @@ def brute_opt(n = 10,K_hot = 1.8,K_cold = 1):
         max_no_tubes_from_area = int(max_tube_area/eff_tube_area)
         max_no_tube_from_mass = int(1.1/tube.mass)
         max_no_tubes = min(max_no_tubes_from_area,max_no_tube_from_mass)
-        max_no_tubes = 24
+        max_no_tubes = 20
         min_no_tubes = int(max_no_tubes*0.4)
         tn_array = np.array(range(int(min_no_tubes),int(max_no_tubes + 1)))
+        tn_array = np.array([20])
 
         for tube_passes in tp_array:
             #print('tube_passes: ',tube_passes)
@@ -1019,7 +1020,7 @@ def brute_opt_2():
 
     hx_designs = {}
     hx_data = []
-    K_hot = 1.8
+    K_hot = 1
     K_cold = 1
     
     design_no = 0
