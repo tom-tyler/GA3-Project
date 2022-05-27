@@ -331,3 +331,4 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
                                 'eff_NTU':0.197,
                                 'mass (kg)':1.466
                                 }
+
