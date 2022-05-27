@@ -77,6 +77,7 @@ class HX:
         self.T_inh = T_inh
         self.T_inc = T_inc
         self.name = name
+        self.real_data = real_data
 
         self.tube_layout = tube_layout #if tubes laid out in a triangular fashion, tube_layout = 't', if laid out in square fashion, tube_layout = 's'
         self.baffle_spacing_in = baffle_spacing_in
@@ -150,8 +151,6 @@ class HX:
         self.convection_area = np.pi*self.tube.d_inner*(self.shell_length*tube_passes)*tube_number # total area of tube surface for convection
         self.baffle_cut = self.baffle_gap/self.shell.d_inner
         self.tube_bundle_diameter = tube_bundle_diameter
-        self.d_otl = tube_bundle_diameter
-        self.D_ctl = self.d_otl - self.tube.d_outer
         
         #axisymmetric dividers for shell - multiple shell passes - only approximate to get mass
         if shell_passes > 1:
@@ -160,6 +159,7 @@ class HX:
             self.divider_no = 0
         self.divider_area = self.shell_length*(self.shell.d_inner/2)
         self.divider = sheet(1.5e-3,2.39,self.divider_area)
+        
 
         #for multi tube passes
         if tube_passes == 2:
@@ -184,6 +184,7 @@ class HX:
             self.b3 = 7
             self.b4 = 0.5
             self.area_adjustment_factor = 1
+            self.pp = self.pitch*(np.sqrt(3)/2)
         elif self.tube_layout == 's':
             self.a1 = 0.321 
             self.a2 = -0.388
@@ -195,6 +196,7 @@ class HX:
             self.b3 = 6.30
             self.b4 = 0.378
             self.area_adjustment_factor = 1
+            self.pp = self.pitch
         elif self.tube_layout == 's_rot':
             self.a1 = 0.321 
             self.a2 = -0.388
@@ -206,52 +208,76 @@ class HX:
             self.b3 = 6.30
             self.b4 = 0.378
             self.area_adjustment_factor = 1/(2**0.5)
+            self.pp = self.pitch*(np.sqrt(2))
 
+        #adjusted diameter parameters
+        self.d_otl = tube_bundle_diameter
+        self.D_ctl = self.d_otl - self.tube.d_outer
+
+        #derived angle parameters - MAY NEED TO DIVIDE BY SHELL PASSES
+        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))
         self.theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)/self.shell_passes
-        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))/self.shell_passes
+
+        #F factors
         self.Fw = (1/(2*np.pi))*(self.theta_ctl - np.sin(self.theta_ctl))
         self.Fc = 1 - 2*self.Fw
-        self.A_tubes = self.tube_number * self.Fw * (np.pi*self.tube.d_outer**2/4)
+
+        #clearances
+        self.delta_tb = 0
+        self.delta_sb = 2.5e-4
 
         #effective areas
         self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/(self.pitch*self.area_adjustment_factor))/self.shell_passes
-        self.Swg = (1/8) * self.shell.d_inner**2 * (self.theta_ds - np.sin(self.theta_ds)) 
-        self.Sw = self.Swg - self.A_tubes
-        self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl)
-        self.Nc = self.shell.d_inner * (1 - 2 * self.baffle_cut) / ((self.pitch * np.cos(self.theta)))
-        self.Ncw = (0.8 * self.baffle_cut * self.shell.d_inner) / ((self.pitch * np.cos(self.theta)))
+        self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl - self.tube.d_outer/2)/self.shell_passes
+        self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
+        self.Stb = (np.pi/4) * ((self.tube.d_outer + self.delta_tb)**2 -self.tube.d_outer**2) * self.tube_number * (1 - self.Fw)
         self.A_shell = self.Sm
 
-        #clearances
-        self.delta_tb = 1e-4
-        self.delta_sb = 2e-4
+        #derived area ratios
+        self.rs = self.Ssb / (self.Ssb + self.Stb)
+        self.rl = (self.Ssb + self.Stb) / self.Sm
+        self.p = 0.8 - 0.15*(1 + self.rs)
+    
+        #pressure drop variables
+        #region
+        self.Nc = round(self.shell.d_inner * (1 - 2 * self.baffle_cut) / (self.pp))
+        self.Ncw = round(0.8*(baffle_gap) / (self.pp))
+        if self.Ncw < 0:
+            self.Ncw = 0
+        if self.Nc < 1:
+            self.Nc = 1
+        if leakage == True:
+            self.Rl = np.exp(-1.33*(1+self.rs)*(self.rl**self.p))
+        else:
+            self.Rl = 1 #assume no leakage
+        self.Rb = np.exp(-3.7*(self.Sb/self.Sm))
         if shell_passes == 2:
             self.Rs = ((self.baffle_spacing/self.baffle_spacing_in)**(1.8))
         elif shell_passes == 1:
             self.Rs = 0.5*((self.baffle_spacing/self.baffle_spacing_in)**(1.8) + (self.baffle_spacing/self.baffle_spacing_out)**(1.8))
-        self.Rb = np.exp(-3.7*(self.Sb/self.Sm))
+        #endregion
 
-        if self.leakage == True:
-            self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
-            self.Stb = np.pi * self.tube.d_outer * self.delta_tb * self.tube_number * (1+self.Fc)
-            self.rs = self.Ssb / (self.Ssb + self.Stb)
-            self.rl = (self.Ssb + self.Stb) / self.Sm
-            self.p = 0.8 - 0.15*(1 + self.rs)
-            self.Rl = np.exp(-1.33*(1+self.rs)*(self.rl**self.p))
-            self.Jl = baffle_leakage_Bell(self.Ssb,self.Stb,self.Sm)
-        
-        else:
-            self.Ssb = 0
-            self.Stb = 0
-            self.rs = 1
-            self.rl = 0
-            self.Rl = 1
-            self.Jl = 1 
-
+        #thermal design variables
+        #region
         self.Jc = 0.55 + 0.72*self.Fc
+        if leakage == True:
+            self.Jl = baffle_leakage_Bell(self.Ssb,self.Stb,self.Sm)
+        else:
+            self.Jl = 1 #assume no leakage
         self.Jb = np.exp(-1.25*(self.Sb/self.Sm))
         self.Jr = 1 #=1 due to high Re
         self.Js = unequal_baffle_spacing_Bell(self.baffle_number,self.baffle_spacing,self.baffle_spacing_in,self.baffle_spacing_out)
+        #endregion
+
+
+        
+        
+        
+        
+
+        
+        
+        
 
     def total_mass(self):
         #calculate total mass of heat exchanger

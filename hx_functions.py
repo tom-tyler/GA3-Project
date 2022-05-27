@@ -3,129 +3,70 @@ from tkinter import N
 from scipy.optimize import fsolve
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from hx_classes import HX, water, pipe
 import pandas as pd
-from numpy import pi
-from math import sqrt
-import openpyxl
 
 
 
-#HYDRAULIC DESIGN
-
-def hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot = 1,K_cold = 1):
-    
-    m_counter = 0
-    dP_e_h = 1
-    dP_e_c = 1
-
-    #all class variables calculated here so that only need to do them once
-    sigma = hx.sigma
-    sigma_nozzle = hx.sigma_nozzle
-    tube_number = hx.tube_number
-    tube_passes = hx.tube_passes
-    tube_c_area = hx.tube.c_area
-    nozzle_c_area = hx.nozzle_c_area
-    A_shell = hx.A_shell
-    m_increment  = hx.m_increment
-    pump_year = hx.pump_year
-    accuracy = hx.accuracy
-
-    for mdp_counter in range(100):
-        if (abs(dP_e_h) < accuracy) and (abs(dP_e_c) < accuracy): 
-            break
-        #heat capacities
-        Cc = m_c*c_w.cp
-        Ch = m_h*h_w.cp
-
-        #mass flow in one tube
-        m_tube = m_h/(tube_number/tube_passes)
-
-        #various velocities needed
-        V_tube = V(m_tube,h_w,tube_c_area)
-        V_nozzle_h = V(m_h,h_w,nozzle_c_area)
-        V_shell = V(m_c,c_w,A_shell)
-        V_nozzle_c = V(m_c,c_w,nozzle_c_area)
-
-        
-        #pressure drop in a single tube
-        dP_tube = dP_tube_drop(hx,h_w,V_tube) * tube_passes
-
-        #pressure drop due to separation leaving tubes
-        dP_in_plus_out = dP_inout(h_w,V_tube,sigma) * tube_passes
-
-        #pressure drop due to separation leaving nozzle
-        dP_in_plus_out_nozzle = dP_inout(h_w,V_nozzle_h,sigma_nozzle)
-
-        #head loss in nozzle
-        dP_nozzles_h = 2 * dP_nozzle(V_nozzle_h,h_w)
-
-        #overall pressure drop
-        dP_tube_ovr = K_hot*(dP_tube + dP_in_plus_out + dP_in_plus_out_nozzle)  + dP_nozzles_h
-
-        dP_new_h = mdot_dP(m_h,'h',h_w,pump_year)
-
-        dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
-
-        if dP_tube_ovr < dP_new_h:
-            if abs(dP_e_h) < 1:
-                m_h += abs(dP_e_h)*hx.m_increment/10
-            else:
-                m_h += hx.m_increment
-        else:
-            if abs(dP_e_h) < 1:
-                m_h -= abs(dP_e_h)*hx.m_increment/10
-            else:
-                m_h -= hx.m_increment
-
-        #cold side
-        dP_shell = dP_shell_drop(c_w, m_c, hx, K_cold)
-        dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
-
-        dP_shell_ovr = dP_shell + dP_nozzles_c
-
-        dP_new_c = mdot_dP(m_c,'c',c_w,pump_year)
-
-        dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
-
-        if dP_shell_ovr < dP_new_c:
-            if abs(dP_e_c) < 1:
-                m_c += abs(dP_e_c)*hx.m_increment/10
-            else:
-                m_c += hx.m_increment
-        else:
-            if abs(dP_e_c) < 1:
-                m_c -= abs(dP_e_c)*hx.m_increment/10
-            else:
-                m_c -= hx.m_increment
-
-        m_counter += 1
-
-        #print('m_h: ',m_h, '    m_c: ',m_c, '      dP_e_c: ',dP_e_c, '      dP_e_c: ',dP_e_c)
-        if mdp_counter == 99:
-            print('exceeded max iterations for m,dP')
-            
-
-    hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
-    return hydraulic
-
-
+# PRESSURE DROP FUNCTIONS
+#region
 
 def dP_tube_drop(hx,liquid,V):
-
+    '''Function returns the pressure drop inside a tube, given the tube velocity, liquid, and the heat exhanger'''
     di = hx.tube.d_inner
     L = hx.tube_length
-    G = V*liquid.rho
-    s = liquid.rho/1000
 
     f = friction_factor(Re(V,di,liquid))
 
-    dP = f*(L/di)*0.5*liquid.rho*V**2
-    #dP = (f*L*G**2)/(2000*di*s)    #same thing (same value)
+    #dP = f*(L/di)*0.5*liquid.rho*V**2
+    dP = (4*f*L*hx.tube_passes/di + 4*hx.tube_passes)*liquid.rho*V**2/2
     return dP
 
 
+
+def dP_shell_drop(liquid, m_c, hx,k4=1,k5=1):
+    
+    nb = hx.baffle_number
+    G = m_c/hx.Sm
+    b = hx.b3 / (1 + 0.14 * ((hx.tube.d_outer * G)/liquid.mu)**hx.b4)
+   
+    f_ideal = hx.b1 * (1.33/(hx.pitch/hx.tube.d_outer))**b * ((hx.tube.d_outer * G)/liquid.mu)**hx.b2
+
+    dPi = k4 * 2*f_ideal*(G**2/liquid.rho)*hx.Nc
+   
+    dPw = k5 * (nb*hx.Rl*(2 + 0.6 * hx.Ncw)*G**2)/(2*liquid.rho)
+  
+    dPc = (nb - 1)*dPi*hx.Rl*hx.Rb
+
+    dPe = dPi*(1 + hx.Ncw/hx.Nc)*hx.Rb*hx.Rs 
+
+    dP_single_shell_pass = dPw + dPc + dPe
+    dP = dP_single_shell_pass * hx.shell_passes
+    return dP
+
+
+
+def dP_inout(liquid,V,sigma):
+
+    Kc,Ke = KcKe(sigma)
+
+    dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
+
+    return dP
+
+
+
+def dP_nozzle(V,liquid):
+
+    dP = 0.5*liquid.rho*V**2
+    return dP
+
+#endregion
+
+# OFTEN USED VARIABLES
+#region
 
 def Re(V,d,liquid):
     Re = (V*d*liquid.rho)/liquid.mu
@@ -133,38 +74,15 @@ def Re(V,d,liquid):
 
 
 
-def dP_shell_drop(liquid, m_c, hx, K_cold):
-    
-    nb = hx.baffle_number
+def V(m_dot,liquid,area):
+    rho = liquid.rho
+    V = m_dot/(rho*area)
+    return V
 
-    dPi = dP_ideal(m_c, liquid, hx)
-   
-    dPw = dPw_ideal(m_c, liquid, hx)
-  
-    dPs = ((nb - 1)*dPi*hx.Rb + nb*dPw)*hx.Rl*K_cold * hx.shell_passes
-    dPe = 2*dPi*(1 + hx.Ncw/hx.Nc)*hx.Rb*hx.Rs 
-    dP = dPe + dPs
-    return dP
+#endregion
 
-
-
-def dPw_ideal(m_c, liquid, hx):
-    dpw_ideal = ((2 + 0.6 * hx.Ncw) * m_c**2) / (2 * 1 * liquid.rho * hx.Sm * hx.Sw)
-    return dpw_ideal
-
-
-
-def dP_ideal(m_c, liquid, hx):
-    #ideal pressure drop
-    G = m_c/hx.Sm
-    b = hx.b3 / (1 + 0.14 * ((hx.tube.d_outer * G)/liquid.mu)**hx.b4)
-    phi = 1
-    f_ideal = hx.b1 * (1.33/(hx.pitch/hx.tube.d_outer))**b * ((hx.tube.d_outer * G)/liquid.mu)**hx.b2
-    dP_ideal = (2 * f_ideal * hx.Nc * G**2)/(1 * liquid.rho * phi)
-    return dP_ideal
-
-
-
+# CORRELATIONS
+#region
 def friction_factor(Re, eD=0):
     A = eD/3.7+(6.7/Re)**0.9
     fo = 1/(-2*np.log10(eD/3.7-5.02/Re*np.log10(A)))**2
@@ -174,55 +92,6 @@ def friction_factor(Re, eD=0):
     else:
         f = fsolve(lambda x: 1/x**0.5-2.0*np.log10(Re*x**0.5)+0.8, fo)
     return f[0]
-
-
-
-def V(m_dot,liquid,area):
-    rho = liquid.rho
-    V = m_dot/(rho*area)
-    return V
-
-
-
-def h_inner(m_h, liquid, hx):
-    m_tube = m_h/(hx.tube_number/hx.tube_passes)
-    V_tube = V(m_tube,liquid,hx.tube.c_area)
-
-    di = hx.tube.d_inner
-
-    R = Re(V_tube,di,liquid)
-
-    if R > 1e4:
-        Nu = 0.023*R**0.8*liquid.Pr**0.3
-    else:
-        Nu = 0.116*(R**(2/3) - 125)*liquid.Pr**(1/3)*(1 + (di/hx.tube_length)**(2/3))
-
-    hi = Nu*liquid.k/di
-
-    return hi
-
-
-
-def LMTD(T_1in,T_2in,T_1out,T_2out):
-    lmtd = ((T_2in - T_1out) - (T_2out - T_1in)) / np.log((T_2in - T_1out) / (T_2out - T_1in))
-    return lmtd
-
-
-
-def U_inside(hi,ho,hx,k_copper = 398):
-
-    do = hx.tube.d_outer
-    di = hx.tube.d_inner
-    L = hx.tube_length*hx.tube_passes
-
-    ro = do/2
-    ri = di/2
-    Ao = np.pi*do*L
-    Ai = np.pi*di*L
-
-    inv_U = 1/hi + (Ai*np.log(ro/ri))/(2*np.pi*k_copper*L) + Ai/(Ao*ho)
-    U = 1/inv_U
-    return U
 
 
 
@@ -248,136 +117,6 @@ def KcKe(sigma):
     Ke = Ke_f(sigma)
 
     return float(Kc),float(Ke)
-
-
-
-def dP_inout(liquid,V,sigma):
-
-    Kc,Ke = KcKe(sigma)
-
-    dP = 0.5*liquid.rho*(V**2)*(Kc + Ke)
-
-    return dP
-
-
-
-def dP_nozzle(V,liquid):
-    G = V*liquid.rho
-    s = liquid.rho/1000
-    
-
-    dP = 7.5e-4*(G**2)/s
-    return dP
-
-
-
-def h_outer(m_c, liquid, hx): # bell delaware method
-
-    #ideal calculation
-    G = m_c / hx.Sm
-    Re_S = (hx.tube.d_outer * G)/liquid.mu
-    a = hx.a3 / (1 + 0.14 * (Re_S**hx.a4))
-    j = hx.a1 * (1.33 /(hx.pitch/hx.tube.d_outer))**a * (Re_S**hx.a2) #dimensionless quanitity
-    phi = 1 #viscosity correction factor
-    ho_ideal = j * liquid.cp * G * liquid.Pr**(-2/3)*phi
-
-    ho = ho_ideal * hx.Jc * hx.Jl * hx.Jb * hx.Jr * hx.Js
-    return ho
-
-
-
-def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
-    
-    #heat capacities
-    Cc = m_c*c_w.cp
-    Ch = m_h*h_w.cp
-
-    hi = h_inner(m_h, h_w, hx)
-    ho = h_outer(m_c, c_w, hx)
-    
-    U = U_inside(hi,ho,hx)
-    A_con = hx.convection_area
-
-    cmin = min(Cc,Ch)
-    cmax = max(Cc,Ch)
-    qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
-    Cr = cmin/cmax #ratio of specific heats 
-    NTU = (U * A_con)/cmin
-    c_root = (1 + Cr**2)**0.5
-    NTU1 = NTU/hx.shell_passes
-    e1 = fsolve(lambda e1: NTU1 + (np.log(((2/e1 - (1 + Cr))/c_root - 1)/((2/e1 - (1 + Cr))/c_root + 1)))/c_root, 0.1)[0]
-
-    #e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
-    ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
-    e = ((ez) - 1) / ((ez) - Cr)
-
-    q_ntu = qmax * e
-
-    T_outc = q_ntu/Cc + T_inc
-    T_outh = T_inh - q_ntu/Ch
-
-
-    #now solve thermal design equations by iteration to get T_outh and T_outc. also find P_outh and P_outc
-
-    # T_outc_new,T_outh_new = 1,1
-    # T_counter = 0
-    # rel_e_h,rel_e_c = 1,1
-
-    # while (abs(rel_e_c) > hx.accuracy) or (abs(rel_e_h) > hx.accuracy):
-
-    #     F = correction_factor(T_inc,T_inh,T_outc,T_outh,hx)
-
-    #     #might need to think about co/counterflow here for when shell passes > 1
-
-    #     T_outc_new = fsolve(lambda T_outc: (T_inc - T_outc) + (1/Cc)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outc)[0]
-    
-    #     T_outh_new = fsolve(lambda T_outh: (T_inh - T_outh) - (1/Ch)*A_con*U*correction_factor(T_inc,T_inh,T_outc,T_outh,hx)*LMTD(T_inc,T_inh,T_outc,T_outh), T_outh)[0]
-        
-    #     rel_e_c = (T_outc_new - T_outc)/T_outc
-    #     rel_e_h = (T_outh_new - T_outh)/T_outh
-
-    #     if T_outc > T_outc_new:
-    #         T_outc = T_outc_new - hx.accuracy
-    #     else:
-    #         T_outc = T_outc_new + hx.accuracy
-
-    #     if T_outh > T_outh_new:
-    #         T_outh = T_outh_new - hx.accuracy
-    #     else:
-    #         T_outh = T_outh_new + hx.accuracy
-    #     #T_outc = (T_outc_new + T_outc)/2
-    #     #T_outh = (T_outh_new + T_outh)/2
-    #     T_counter += 1
-
-    #     if T_counter > 100:
-    #         print('exceeded max iterations for T')
-    #         break
-
-    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
-    return thermal
-
-
-
-def Q_c(Cc,T_outc,T_inc):
-    Q = Cc*(T_outc - T_inc)
-    return Q
-
-
-
-def Q_h(Ch,T_outh,T_inh):
-    Q = Ch*(T_inh - T_outh)
-    return Q
-
-
-
-def effectiveness(Q,Cc,Ch,T_inc,T_inh):
-
-    if Cc > Ch:
-        e = Q / (Ch*(T_inh - T_inc))
-    else:
-        e = Q / (Cc*(T_inh - T_inc))
-    
-    return e
 
 
 
@@ -633,9 +372,193 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
 
     return F
 
+#endregion
+
+# HEAT TRANSFER VARIABLES
+#region
+def h_inner(m_h, liquid, hx):
+    m_tube = m_h/(hx.tube_number/hx.tube_passes)
+    V_tube = V(m_tube,liquid,hx.tube.c_area)
+
+    di = hx.tube.d_inner
+
+    R = Re(V_tube,di,liquid)
+    fr = friction_factor(R)
+
+    Nu = (fr/2)*R*liquid.Pr/(1.07 + 12.7*np.sqrt(fr/2)*(liquid.Pr**(2/3) - 1))
+
+    hi = Nu*liquid.k/di
+
+    return hi
 
 
-def hx_design(hx,K_hot,K_cold):
+
+def h_outer(m_c, liquid, hx): # bell delaware method
+
+    #ideal calculation
+    G = m_c / hx.Sm
+    Re_S = (hx.tube.d_outer * G)/liquid.mu
+
+    a = hx.a3 / (1 + 0.14 * (Re_S**hx.a4))
+    j = hx.a1 * (1.33 /(hx.pitch/hx.tube.d_outer))**a * (Re_S**hx.a2) #dimensionless quanitity
+
+    ho_ideal = j * liquid.cp * G * liquid.Pr**(-2/3)
+
+    ho = ho_ideal * hx.Jc * hx.Jl * hx.Jb * hx.Jr * hx.Js
+    return ho
+
+
+
+def U_inside(hi,ho,hx,k_copper = 398):
+
+    do = hx.tube.d_outer
+    di = hx.tube.d_inner
+
+    inv_U = 1/ho + do*np.log(do/di)/(2**k_copper) + do/(hi*di)
+    U = 1/inv_U
+    return U
+
+#endregion
+
+# DESIGN TOOLS
+#region
+
+# THERMAL DESIGN
+
+def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc):
+    
+    #heat capacities
+    Cc = m_c*c_w.cp
+    Ch = m_h*h_w.cp
+
+    hi = h_inner(m_h, h_w, hx)
+    ho = h_outer(m_c, c_w, hx)
+    
+    U = U_inside(hi,ho,hx)
+    A_con = hx.convection_area
+
+    cmin = min(Cc,Ch)
+    cmax = max(Cc,Ch)
+    qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
+    Cr = cmin/cmax #ratio of specific heats 
+    NTU = (U * A_con)/cmin
+    c_root = (1 + Cr**2)**0.5
+
+    e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
+    ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
+    e = ((ez) - 1) / ((ez) - Cr)
+
+    q_ntu = qmax * e
+
+    T_outc = q_ntu/Cc + T_inc
+    T_outh = T_inh - q_ntu/Ch
+
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
+    return thermal
+
+# HYDRAULIC DESIGN
+
+def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
+    
+    mdp_counter = 0
+    dP_e_h = 1
+    dP_e_c = 1
+
+    #all class variables calculated here so that only need to do them once
+    sigma = hx.sigma
+    tube_number = hx.tube_number
+    tube_passes = hx.tube_passes
+    tube_c_area = hx.tube.c_area
+    nozzle_c_area = hx.nozzle_c_area
+    A_shell = hx.A_shell
+    pump_year = hx.pump_year
+    accuracy = hx.accuracy
+
+    for mdp_counter in range(100):
+        if (abs(dP_e_h) < accuracy) and (abs(dP_e_c) < accuracy): 
+            break
+        #heat capacities
+        Cc = m_c*c_w.cp
+        Ch = m_h*h_w.cp
+
+        #mass flow in one tube
+        m_tube = m_h/(tube_number/tube_passes)
+
+        #various velocities needed
+        V_tube = V(m_tube,h_w,tube_c_area)
+        V_nozzle_h = V(m_h,h_w,nozzle_c_area)
+        V_shell = V(m_c,c_w,A_shell)
+        V_nozzle_c = V(m_c,c_w,nozzle_c_area)
+
+        #hot side loss
+        #region
+        #pressure drop in a single tube
+        dP_tube = dP_tube_drop(hx,h_w,V_tube)
+
+        #pressure drop due to separation leaving tubes
+        dP_in_plus_out = dP_inout(h_w,V_tube,sigma) * tube_passes
+
+        #head loss in nozzles
+        dP_nozzles_h = 2 * dP_nozzle(V_nozzle_h,h_w)
+
+        #overall pressure drop on hot side
+        dP_tube_ovr = k1*dP_tube + k2*dP_in_plus_out + k3*dP_nozzles_h
+
+        dP_new_h = mdot_dP(m_h,'h',h_w,pump_year)
+
+        dP_e_h = (dP_new_h - dP_tube_ovr)/dP_new_h
+
+        if dP_tube_ovr < dP_new_h:
+            if abs(dP_e_h) < 1:
+                m_h += abs(dP_e_h)*hx.m_increment/10
+            else:
+                m_h += hx.m_increment
+        else:
+            if abs(dP_e_h) < 1:
+                m_h -= abs(dP_e_h)*hx.m_increment/10
+            else:
+                m_h -= hx.m_increment
+        #endregion
+
+        #cold side loss
+        #region
+        #shell pressure drop
+        dP_shell = dP_shell_drop(c_w, m_c, hx,k4=k4,k5=k5)
+
+        #head loss in nozzles
+        dP_nozzles_c = 2 * dP_nozzle(V_nozzle_c,c_w)
+
+        #overall pressure drop on cold side
+        dP_shell_ovr = dP_shell + k6*dP_nozzles_c
+
+        dP_new_c = mdot_dP(m_c,'c',c_w,pump_year)
+
+        dP_e_c = (dP_new_c - dP_shell_ovr)/dP_new_c
+
+        if dP_shell_ovr < dP_new_c:
+            if abs(dP_e_c) < 1:
+                m_c += abs(dP_e_c)*hx.m_increment/10
+            else:
+                m_c += hx.m_increment
+        else:
+            if abs(dP_e_c) < 1:
+                m_c -= abs(dP_e_c)*hx.m_increment/10
+            else:
+                m_c -= hx.m_increment
+        #endregion
+        
+        mdp_counter += 1
+
+        if mdp_counter == 99:
+            print('exceeded max iterations for m,dP')
+            
+
+    hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
+    return hydraulic
+
+# HX DESIGN: tool which outputs performance for a given heat exchanger in a dictionary
+
+def hx_design(hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
     #initial guesses for mass flowrate:
     m_h = 0.45 #initial guess for hot mass flow rate
@@ -646,33 +569,44 @@ def hx_design(hx,K_hot,K_cold):
     T_outc = hx.T_inc + 10.645
     R = (hx.T_inc - T_outc)/(T_outh - hx.T_inh)
 
-    if (abs(1-R) <0.1):
+    if (abs(1-R) < 0.1):
         T_outh = hx.T_inh - 6.2
         T_outc = hx.T_inc + 7.876
 
+    #initialise errors
+    T_e_h = 1
+    T_e_c = 1
 
-    #creating hot and cold water objects
-    if (T_outh > 70) or (T_outh < 30):
-        T_outh = 50
-    if (T_outc > 40) or (T_outc < 10):
-        T_outc = 20
-    h_w = water(hx.T_inh,T_outh)
-    c_w = water(hx.T_inc,T_outc)
+    for Q_counter in range(100):
+        if (abs(T_e_h) < hx.accuracy/10) and (abs(T_e_c) < hx.accuracy/10): 
+            break
 
-    #HYDRAULIC DESIGN
-    hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,K_hot,K_cold) #,invalid_hx_flag 
+        #creating hot and cold water objects
+        if (T_outh > 70) or (T_outh < 30):
+            T_outh = 50
+        if (T_outc > 40) or (T_outc < 10):
+            T_outc = 22
+        h_w = water(hx.T_inh,T_outh)
+        c_w = water(hx.T_inc,T_outc)
 
+        #HYDRAULIC DESIGN
+        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=k1,k2=k2,k3=k3,k4=k4,k5=k5,k6=k6) #,invalid_hx_flag 
 
-    m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
-    dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
+        m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
+        dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
-    #THERMAL DESIGN
-    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
-    T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
+        #THERMAL DESIGN
+        thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc)
+        T_outh_new, T_outc_new = thermal['T_outh'], thermal['T_outc']
+
+        T_e_h = (T_outh_new - T_outh)/T_outh_new
+        T_e_c = (T_outc_new - T_outc)/T_outc_new
+
+        T_outh = (T_outh_new + T_outh)/2
+        T_outc = (T_outc_new + T_outc)/2
 
     heat_transfer_ntu = thermal['q_ntu']
     eff_ntu = thermal['eff_ntu']
-    U = thermal['U']
 
     hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
             'T cold in (C)':hx.T_inc,
@@ -690,10 +624,56 @@ def hx_design(hx,K_hot,K_cold):
             
     return hx_dict
 
+#endregion
 
-def heat_exchangers(heat_exchanger=None):
+# CURVE FITTING
+#region
+
+def f_m_hot(hx,k1,k2,k3):
+
+    m_hot = hx_design(hx,k1=k1,k2=k2,k3=k3)['mdot_hot (l/s)']
+
+    return m_hot
+
+def f_m_cold(hx,k4,k5,k6):
+
+    m_cold = hx_design(hx,k4=k4,k5=k5,k6=k6)['mdot_cold (l/s)']
+
+    return m_cold
+
+def fit_data(heat_exchanger=None):
+
+
+    hx_dict = heat_exchanger_dict(heat_exchanger)
+    hx_list = np.array([])
+    m_list_hot = np.array([])
+    m_list_cold = np.array([])
+
+    for hxi in hx_dict:
+        hx = hx_dict[hxi]
+
+        experimental_data = hx.real_data
+        m_list_hot = np.append(m_list_hot, np.array([experimental_data['mdot_hot (l/s)']]))
+        m_list_cold = np.append(m_list_cold, np.array([experimental_data['mdot_cold (l/s)']]))
+        hx_list = np.append(hx_list,np.array([hx]))
+
+    k1k2k3, pcov1 = curve_fit(f_m_hot,hx,m_list_hot,bounds=(0,10))
+    k4k5k6, pcov2 = curve_fit(f_m_hot,hx,m_list_hot,bounds=(0,10))
+
+    k_array = np.append(k1k2k3,k4k5k6)
+    print(k_array)
+    return k_array
+
+#endregion
+
+# DICTIONARY GENERATION
+#region
+
+
+def heat_exchanger_dict(heat_exchanger=None):
 
     hx_list = {}
+    real_moodle_data = moodle_performance_dict()
 
     hx_list['hx_y2018_p2022'] = HX(tube_number = 13,
                         baffle_number = 14,
@@ -713,31 +693,8 @@ def heat_exchangers(heat_exchanger=None):
                         T_inc = 19.7,
                         baffle_spacing_in = 39e-3,
                         baffle_spacing_out = 39e-3,
-                        leakage = True,
-                        name = 'JPL-2018'
-                        )
-
-
-    hx_list['hx_y2018_p2019'] = HX(tube_number = 13,
-                        baffle_number = 14,
-                        pitch = 12e-3,
-                        tube_length = 362e-3,
-                        plenum_length_1 = 50e-3,
-                        plenum_length_2 = 50e-3,
-                        baffle_gap = 14e-3,
-                        baffle_type = 'across_c',
-                        tube_layout='t',
-                        shell_passes = 1,
-                        tube_bundle_diameter= 56e-3,
-                        tube_passes = 1,
-                        baffle_spacing_in = 39e-3,
-                        baffle_spacing_out = 39e-3,
-                        design_year = 2018,
-                        pump_year = 2019,
-                        T_inh = 53.2,
-                        T_inc = 13.8,
-                        leakage = True,
-                        name = 'JPL-2018')
+                        name = 'JPL-2018',
+                        real_data = real_moodle_data['hx_y2018_p2022'])
 
     hx_list['hx_y2017B_p2022'] = HX(tube_number = 14,
                         baffle_number = 12,
@@ -757,50 +714,29 @@ def heat_exchangers(heat_exchanger=None):
                         pump_year = 2022,
                         T_inh = 48.5,
                         T_inc = 22.3,
-                        leakage = True,
-                        name = '2017-B')
+                        name = '2017-B',
+                        real_data = real_moodle_data['hx_y2017B_p2022'])
 
-    hx_list['hx_y2017B_p2017'] = HX(tube_number = 14,
-                        baffle_number = 12,
-                        pitch = 15e-3,
-                        tube_length = 225e-3,
-                        plenum_length_1 = 41e-3,
-                        plenum_length_2 = 23e-3,
-                        baffle_gap = 25.6e-3,
-                        baffle_type = 'across_c',
-                        tube_layout='t',
-                        shell_passes = 2,
-                        tube_bundle_diameter= 60e-3,
-                        tube_passes = 2,
-                        baffle_spacing_in = 31e-3,
-                        baffle_spacing_out = 33e-3,
-                        design_year = 2017,
-                        pump_year = 2017,
-                        T_inh = 52.4,
-                        T_inc = 21.7,
-                        leakage = True,
-                        name = '2017-B')
-
-    hx_list['hx_y2017C_p2017'] = HX(tube_number = 14,
-                        baffle_number = 8,
-                        pitch = 10e-3,
-                        tube_length = 192e-3,
-                        plenum_length_1 = 41e-3,
-                        plenum_length_2 = 24e-3,
-                        baffle_gap = 15.75e-3,
+    hx_list['hx_y2018_p2019'] = HX(tube_number = 13,
+                        baffle_number = 14,
+                        pitch = 12e-3,
+                        tube_length = 362e-3,
+                        plenum_length_1 = 50e-3,
+                        plenum_length_2 = 50e-3,
+                        baffle_gap = 14e-3,
                         baffle_type = 'across_c',
                         tube_layout='t',
                         shell_passes = 1,
-                        tube_bundle_diameter= 52e-3,
-                        tube_passes = 2,
-                        baffle_spacing_in = 31.25e-3,
-                        baffle_spacing_out = 31.25e-3,
-                        design_year = 2017,
-                        pump_year = 2017,
-                        T_inh = 51.5,
-                        T_inc = 22.2,
-                        leakage = True,
-                        name = '2017-C')
+                        tube_bundle_diameter= 56e-3,
+                        tube_passes = 1,
+                        baffle_spacing_in = 39e-3,
+                        baffle_spacing_out = 39e-3,
+                        design_year = 2018,
+                        pump_year = 2019,
+                        T_inh = 53.2,
+                        T_inc = 13.8,
+                        name = 'JPL-2018',
+                        real_data = real_moodle_data['hx_y2018_p2019'])
 
     if heat_exchanger == None:
         return hx_list
@@ -811,38 +747,70 @@ def heat_exchangers(heat_exchanger=None):
 
 
 
-def hx_design_basic(hx):
-    #initial guesses for mass flowrate:
-    m_h = 0.45 #initial guess for hot mass flow rate
-    m_c = 0.45 #initial guess for cold mass flow rate
+def moodle_performance_dict(heat_exchanger = None):
 
-    #initial guesses for outlet temperatures
-    T_outh = hx.T_inh - 9.103
-    T_outc = hx.T_inc + 10.645
-    R = (hx.T_inc - T_outc)/(T_outh - hx.T_inh)
+    p_data = {}
 
-    if (abs(1-R) <0.1):
-        T_outh = hx.T_inh - 6.2
-        T_outc = hx.T_inc + 7.876
+    #correct
+    p_data['hx_y2018_p2022'] = {'T cold out (C)':26.1,   
+                                'T hot out (C)':46.8,
+                                'mdot_cold (l/s)':0.454,
+                                'mdot_hot (l/s)':0.472,
+                                'dP_cold (bar)':0.277,
+                                'dP_hot (bar)':0.137,
+                                'Q_NTU (kW)':12460,
+                                'eff_NTU':0.197,
+                                'mass (kg)':1.466
+                                }
 
-    #initial heat transfer parameters
-    heat_transfer,eff = 1,1
-    Q_counter = 0
-    rel_e_h1,rel_e_c1 = 1,1
-    q_acc = 0.05
+    #correct
+    p_data['hx_y2017B_p2022'] = {'T cold out (C)':30.1,   
+                                'T hot out (C)':43.4,
+                                'mdot_cold (l/s)':0.250,
+                                'mdot_hot (l/s)':0.425,
+                                'dP_cold (bar)':0.471,
+                                'dP_hot (bar)':0.212,
+                                'Q_NTU (kW)':8.52,
+                                'eff_NTU':0.314,
+                                'mass (kg)':1.021
+                                }
+
+    #correct
+    p_data['hx_y2018_p2019'] = {'T cold out (C)':21.0,   
+                                'T hot out (C)':45.3,
+                                'mdot_cold (l/s)':0.525,
+                                'mdot_hot (l/s)':0.490,
+                                'dP_cold (bar)':0.356,
+                                'dP_hot (bar)':0.163,
+                                'Q_NTU (kW)':15820,
+                                'eff_NTU':0.198,
+                                'mass (kg)':1.466
+                                }
+
+    if heat_exchanger == None:
+        return p_data
+    else:
+        hx_singular = {}
+        hx_singular[heat_exchanger] = p_data[heat_exchanger]
+        return hx_singular
+
+#endregion
+
+#OTHER TOOLS
+#region
+
+# HX_MOODLE_DATA: tool which outputs a dataframe of data for the moodle heat exchangers
+
+def predict_moodle_cases(heat_exchanger=None,k_array = np.array([1,1,1,1,1,1])):
 
 
-
-def hx_moodle_data(K_hot = 1, K_cold = 1):
-
-
-    hx_list = heat_exchangers()
+    hx_list = heat_exchanger_dict(heat_exchanger)
     hx_data = pd.DataFrame()
 
     for hxi in hx_list:
         hx = hx_list[hxi]
 
-        performance = hx_design(hx,K_hot,K_cold) #,invalid_hx_flag 
+        performance = hx_design(hx,k1=k_array[0],k2=k_array[1],k3=k_array[2],k4=k_array[3],k5=k_array[4],k6=k_array[5]) #,invalid_hx_flag 
 
 
         hx_data = hx_data.append(performance, ignore_index = True)
@@ -867,7 +835,7 @@ def hx_moodle_data(K_hot = 1, K_cold = 1):
 
 
 
-def brute_opt(n = 10,K_hot = 1,K_cold = 1):
+def optimiser(n = 10):
     #brute force optimisation with a few checks to eliminate cases as early as possible
 
     baffle_type = 'across_c' #assume this is best
@@ -1013,68 +981,4 @@ def brute_opt(n = 10,K_hot = 1,K_cold = 1):
 
     hx_data.to_excel(f"hx_data_{run1}.xlsx", sheet_name="heat_exchanger_data", index=False)
 
-def brute_opt_2():
-    #brute optimisation but applying some common sense to reduce time
-    baffle_type = 'across_c'
-    tube_layout = 't'
-
-    hx_designs = {}
-    hx_data = []
-    K_hot = 1
-    K_cold = 1
-    
-    design_no = 0
-
-    pitch = 12e-3
-    crossflow_rows = 4.5
-    tube_bundle_diameter = (crossflow_rows * pitch + 8e-3)/1000
-    plenum_length_1 = 41
-    plenum_length_2 = 41
-
-    for tube_passes in range(1,4):
-        
-        for tube_number in range(10,15):
-            
-            for tube_length in range(100,250,30):
-                if tube_number * tube_length <= 3500:
-                    for shell_passes in range(1,2):
-                        if shell_passes%2 == 0:
-                            bso_min = 10
-                        else:
-                            bso_min = 41
-                        baffle_spacing_in = 41
-                        for baffle_spacing_out in range(bso_min, 90, 40):
-                            for baffle_number in range(10,14):
-                                for baffle_gap in range(10,60,10):
-                                    design_no += 1
-                                    heat_exchanger = HX(tube_number = tube_number,
-                                                        baffle_number = baffle_number,
-                                                        pitch = 12/1000,
-                                                        tube_length = tube_length/1000,
-                                                        plenum_length_1 = plenum_length_1,
-                                                        plenum_length_2 = plenum_length_2,
-                                                        baffle_gap = baffle_gap/1000,
-                                                        baffle_type = baffle_type,
-                                                        tube_layout = tube_layout,
-                                                        shell_passes = shell_passes,
-                                                        tube_bundle_diameter  = tube_bundle_diameter,
-                                                        tube_passes = tube_passes,
-                                                        baffle_spacing_in = baffle_spacing_in/1000,
-                                                        baffle_spacing_out = baffle_spacing_out/1000,
-                                                        design_year = 2022,
-                                                        pump_year = 2022,
-                                                        T_inh = 53.4,
-                                                        T_inc = 19.2,
-                                                        leakage = True,
-                                                        name = None
-                                                        )
-                                    
-                                    if heat_exchanger.total_mass() <= 1.1:
-                                        print('pass')
-                                        hx_designs[f'design {design_no}'] = heat_exchanger
-                                        performance = hx_design_basic(heat_exchanger)
-                                        
-                                        hx_data = hx_data.append(performance, vars(heat_exchanger)[0:13])
-    
-    hx_data.sort(reverse = True)
-    return hx_data[0:3]
+#endregion
