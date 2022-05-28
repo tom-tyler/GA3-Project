@@ -2,7 +2,7 @@ import hx_functions as hxf
 from hx_classes import water
 
 
-hxf.brute_opt(n=1)
+# hxf.brute_opt(n=1)
 # h_w = water(55,45)
 # c_w = water(20,25)
 
@@ -17,4 +17,6 @@ hxf.brute_opt(n=1)
 
 #print(hxf.brute_opt_2())
 
-#hxf.hx_moodle_data()
+k_array = hxf.fit_data()
+
+hxf.predict_moodle_cases(k_array=k_array)
