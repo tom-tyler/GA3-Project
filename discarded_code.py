@@ -332,3 +332,13 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
                                 'mass (kg)':1.466
                                 }
 
+    p_data['hx_y2018_p2019'] = {'T cold out (C)':21.0,   
+                                'T hot out (C)':45.3,
+                                'mdot_cold (l/s)':0.525,
+                                'mdot_hot (l/s)':0.490,
+                                'dP_cold (bar)':0.356,
+                                'dP_hot (bar)':0.163,
+                                'Q_NTU (kW)':15820,
+                                'eff_NTU':0.198,
+                                'mass (kg)':1.466
+                                }
