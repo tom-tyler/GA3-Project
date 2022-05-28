@@ -710,7 +710,7 @@ def fit_data(heat_exchanger=None):
     k_array = np.append(k1k2k3,k4k5k6)
     k_array = np.append(k_array,Z1Z2Z3)
     k_array = np.append(k_array,mk)
-    print(k_array)
+    print('k1,k2,k3,k4,k5,k6,Z1,Z2,Z3,mk = ',k_array)
     return k_array
 
 #endregion
