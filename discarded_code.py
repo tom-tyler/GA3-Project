@@ -342,3 +342,44 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
                                 'eff_NTU':0.198,
                                 'mass (kg)':1.466
                                 }
+
+        T_e_h = (T_outh_new - T_outh)/T_outh_new
+        T_e_c = (T_outc_new - T_outc)/T_outc_new
+
+        if T_outh < T_outh_new:
+            if abs(T_e_h) < 1:
+                T_outh += abs(T_e_h)*hx.T_increment
+            else:
+                T_outh += hx.T_increment
+        else:
+            if abs(T_e_h) < 1:
+                T_outh -= abs(T_e_h)*hx.T_increment
+            else:
+                T_outh -= hx.T_increment
+        
+        if T_outc < T_outc_new:
+            if abs(T_e_c) < 1:
+                T_outc += abs(T_e_c)*hx.T_increment
+            else:
+                T_outc += hx.T_increment
+        else:
+            if abs(T_e_c) < 1:
+                T_outc -= abs(T_e_c)*hx.T_increment
+            else:
+                T_outc -= hx.T_increment
+
+                    Q_counter = 0
+    for Q_counter in range(100):
+        if (abs(T_e_h) < hx.accuracy) and (abs(T_e_c) < hx.accuracy): 
+            break
+
+        Q_counter += 1
+
+        if Q_counter == 99:
+            print('exceeded max iterations for Q')
+
+        #creating hot and cold water objects
+        if (T_outh > 70) or (T_outh < 30):
+            T_outh = 50
+        if (T_outc > 40) or (T_outc < 10):
+            T_outc = 22

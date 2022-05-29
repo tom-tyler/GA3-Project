@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from hx_classes import HX, water, pipe
 import pandas as pd
+from datetime import date
 
 
 
@@ -421,7 +422,7 @@ def U_inside(hi,ho,hx,k_copper = 398):
 
 # THERMAL DESIGN
 
-def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc,Z1=1,Z2=1,Z3=1):
+def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,z1=1,z2=1,z3=1):
     
     #heat capacities
     Cc = m_c*c_w.cp
@@ -437,12 +438,12 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,T_outh,T_outc,Z1=1,Z2=1,Z3=1):
     cmax = max(Cc,Ch)
     qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
-    NTU = Z1*(U * A_con)/cmin
+    NTU = z1*(U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
-    e1 = Z2 * 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
+    e1 = z2 * 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
     ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
-    e = Z3 * ((ez) - 1) / ((ez) - Cr)
+    e = z3 * ((ez) - 1) / ((ez) - Cr)
 
     q_ntu = qmax * e
 
@@ -506,7 +507,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
         if dP_tube_ovr < dP_new_h:
             if abs(dP_e_h) < 1:
-                m_h += abs(dP_e_h)*hx.m_increment
+                m_h += abs(dP_e_h)*hx.m_increment*0.9
             else:
                 m_h += hx.m_increment
         else:
@@ -533,7 +534,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
         if dP_shell_ovr < dP_new_c:
             if abs(dP_e_c) < 1:
-                m_c += abs(dP_e_c)*hx.m_increment
+                m_c += abs(dP_e_c)*hx.m_increment*0.9
             else:
                 m_c += hx.m_increment
         else:
@@ -545,10 +546,16 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
         
         mdp_counter += 1
 
-        if mdp_counter == 99:
+        if mdp_counter >= 10:
+            pass
+        elif mdp_counter >= 20: 
+            hx.m_increment = 0.12
+        elif mdp_counter >= 30:
+            hx.m_increment = 0.9
+        elif mdp_counter >= 99:
             print('exceeded max iterations for m,dP')
             
-
+    hx.m_increment = 0.1
     hydraulic = {'m_h':m_h,'m_c':m_c,'V_tube':V_tube,'V_shell':V_shell,'dP_hot':dP_tube_ovr,'dP_cold':dP_shell_ovr,'Cc':Cc,'Ch':Ch}
     return hydraulic
 
@@ -563,11 +570,10 @@ def hx_design(hx,k_array = np.ones(10)):
     k4 = k_array[3]
     k5 = k_array[4]
     k6 = k_array[5]
-    Z1 = k_array[6]
-    Z2 = k_array[7]
-    Z3 = k_array[8]
+    z1 = k_array[6]
+    z2 = k_array[7]
+    z3 = k_array[8]
     mk = k_array[9]
-
 
     #initial guesses for mass flowrate:
     m_h = 0.45 #initial guess for hot mass flow rate
@@ -582,62 +588,18 @@ def hx_design(hx,k_array = np.ones(10)):
         T_outh = hx.T_inh - 6.2
         T_outc = hx.T_inc + 7.876
 
-    #initialise errors
-    T_e_h = 1
-    T_e_c = 1
+    h_w = water(hx.T_inh,T_outh)
+    c_w = water(hx.T_inc,T_outc)
 
-    Q_counter = 0
-    for Q_counter in range(100):
-        if (abs(T_e_h) < hx.accuracy) and (abs(T_e_c) < hx.accuracy): 
-            break
+    #HYDRAULIC DESIGN
+    hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=k1,k2=k2,k3=k3,k4=k4,k5=k5,k6=k6) #,invalid_hx_flag 
 
-        Q_counter += 1
+    m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
+    dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
-        if Q_counter == 99:
-            print('exceeded max iterations for Q')
-
-        #creating hot and cold water objects
-        if (T_outh > 70) or (T_outh < 30):
-            T_outh = 50
-        if (T_outc > 40) or (T_outc < 10):
-            T_outc = 22
-        h_w = water(hx.T_inh,T_outh)
-        c_w = water(hx.T_inc,T_outc)
-
-        #HYDRAULIC DESIGN
-        hydraulic = hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=k1,k2=k2,k3=k3,k4=k4,k5=k5,k6=k6) #,invalid_hx_flag 
-
-        m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
-        dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
-
-        #THERMAL DESIGN
-        thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,T_outh,T_outc,Z1,Z2,Z3)
-        T_outh_new, T_outc_new = thermal['T_outh'], thermal['T_outc']
-
-        T_e_h = (T_outh_new - T_outh)/T_outh_new
-        T_e_c = (T_outc_new - T_outc)/T_outc_new
-
-        if T_outh < T_outh_new:
-            if abs(T_e_h) < 1:
-                T_outh += abs(T_e_h)*hx.T_increment
-            else:
-                T_outh += hx.T_increment
-        else:
-            if abs(T_e_h) < 1:
-                T_outh -= abs(T_e_h)*hx.T_increment
-            else:
-                T_outh -= hx.T_increment
-        
-        if T_outc < T_outc_new:
-            if abs(T_e_c) < 1:
-                T_outc += abs(T_e_c)*hx.T_increment
-            else:
-                T_outc += hx.T_increment
-        else:
-            if abs(T_e_c) < 1:
-                T_outc -= abs(T_e_c)*hx.T_increment
-            else:
-                T_outc -= hx.T_increment
+    #THERMAL DESIGN
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,z1,z2,z3)
+    T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
 
     heat_transfer_ntu = thermal['q_ntu']
     eff_ntu = thermal['eff_ntu']
@@ -683,9 +645,9 @@ def f_m_cold(i_list,k4,k5,k6):
 
     return np.array(m_cold_list)
 
-def f_thermal(i_list,Z1,Z2,Z3):
+def f_thermal(i_list,z1,z2,z3):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,1,1,1,Z1,Z2,Z3,1])
+    k_array = np.array([1,1,1,1,1,1,z1,z2,z3,1])
     Q_predict_list = []
     for i in i_list:
         hx = hx_dict[i]
@@ -725,15 +687,19 @@ def fit_data(heat_exchanger=None):
         q_list = np.append(q_list, np.array([experimental_data['Q_NTU (kW)']]))
         mass_list = np.append(mass_list,np.array([experimental_data['mass (kg)']]))
 
+    print('finding k1 k2 k3')
     k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+    print('finding k4 k5 k6')
     k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=(0,np.inf),p0 = np.array([1,1,1]))
-    Z1Z2Z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+    print('finding z1 z2 z3')
+    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+    print('findig mk')
     mk,pcov4 = curve_fit(f_mass,i_list,mass_list,bounds=(0,np.inf),p0 = np.array(0.9))
 
     k_array = np.append(k1k2k3,k4k5k6)
-    k_array = np.append(k_array,Z1Z2Z3)
+    k_array = np.append(k_array,z1z2z3)
     k_array = np.append(k_array,mk)
-    print('k1,k2,k3,k4,k5,k6,Z1,Z2,Z3,mk = ',k_array)
+    print('k1,k2,k3,k4,k5,k6,z1,z2,z3,mk = ',k_array)
     return k_array
 
 #endregion
@@ -938,8 +904,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 53.9,
                         T_inc = 19.4,
-                        name = '2019-A2',
-                        real_data = real_moodle_data['2019-A2'])
+                        name = '2019_A2',
+                        real_data = real_moodle_data['2019_A2'])
                         #2019 Group A Run 2
 
     hx_list[10] = HX(tube_number = 14,
@@ -960,8 +926,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                        pump_year = 2019,
                        T_inh = 55.2,
                        T_inc = 19.5,
-                       name = '2019-B2',
-                       real_data = real_moodle_data['2019-B2'])
+                       name = '2019_B2',
+                       real_data = real_moodle_data['2019_B2'])
                        #2019 Group B Run 2
 
     hx_list[11] = HX(tube_number = 16,
@@ -982,8 +948,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 53.0,
                         T_inc = 19.6,
-                        name = '2019-C2',
-                        real_data = real_moodle_data['2019-C2'])
+                        name = '2019_C2',
+                        real_data = real_moodle_data['2019_C2'])
                         #2019 Group C Run 2
 
     hx_list[12] = HX(tube_number = 20,
@@ -1004,8 +970,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 53.2,
                         T_inc = 19.4,
-                        name = '2019-D2',
-                        real_data = real_moodle_data['2019-D2'])
+                        name = '2019_D2',
+                        real_data = real_moodle_data['2019_D2'])
                         #2019 Group D Run 2
 
     hx_list[13] = HX(tube_number = 19,
@@ -1026,8 +992,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 53.8,
                         T_inc = 19.1,
-                        name = '2019-E2',
-                        real_data = real_moodle_data['2019-E2'])
+                        name = '2019_E2',
+                        real_data = real_moodle_data['2019_E2'])
                         #2019 Group E Run 2
 
 
@@ -1046,7 +1012,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data = {}
 
     #correct
-    p_data['hx_y2018_p2022'] = {'T cold out (C)':26.1,   
+    p_data['hx_y2018_p2022'] = {'Name':'real_data',
+                                'T cold out (C)':26.1,   
                                 'T hot out (C)':46.8,
                                 'mdot_cold (l/s)':0.454,
                                 'mdot_hot (l/s)':0.472,
@@ -1058,7 +1025,8 @@ def moodle_performance_dict(heat_exchanger = None):
                                 }
 
     #correct
-    p_data['hx_y2017B_p2022'] = {'T cold out (C)':30.1,   
+    p_data['hx_y2017B_p2022'] = {'Name':'real_data',
+                                'T cold out (C)':30.1,   
                                 'T hot out (C)':43.4,
                                 'mdot_cold (l/s)':0.250,
                                 'mdot_hot (l/s)':0.425,
@@ -1072,7 +1040,8 @@ def moodle_performance_dict(heat_exchanger = None):
     #correct
 
 
-    p_data['2019_demo'] = {'T cold out (C)':21,
+    p_data['2019_demo'] = {'Name':'real_data',
+                                'T cold out (C)':21,
                        'T hot out (C)':45.3,
                        'mdot_cold (l/s)':0.525,
                        'mdot_hot (l/s)':0.490,
@@ -1083,7 +1052,8 @@ def moodle_performance_dict(heat_exchanger = None):
                        'mass (kg)':1.466
                        }
 
-    p_data['2019_A1'] = {'T cold out (C)':26.4,
+    p_data['2019_A1'] = {'Name':'real_data',
+                                'T cold out (C)':26.4,
                         'T hot out (C)':47.2,
                         'mdot_cold (l/s)':0.417,
                         'mdot_hot (l/s)':0.299,
@@ -1094,7 +1064,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.15
                         }
 
-    p_data['2019_B1'] = {'T cold out (C)':26,
+    p_data['2019_B1'] = {'Name':'real_data',
+                                'T cold out (C)':26,
                         'T hot out (C)':48,
                         'mdot_cold (l/s)':0.375,
                         'mdot_hot (l/s)':0.462,
@@ -1105,7 +1076,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.03
                         }
 
-    p_data['2019_C1'] = {'T cold out (C)':24.1,
+    p_data['2019_C1'] = {'Name':'real_data',
+                                'T cold out (C)':24.1,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
                         'mdot_hot (l/s)':0.462,
@@ -1116,7 +1088,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.09
                         }
 
-    p_data['2019_D1'] = {'T cold out (C)':25,
+    p_data['2019_D1'] = {'Name':'real_data',
+                                'T cold out (C)':25,
                         'T hot out (C)':43.6,
                         'mdot_cold (l/s)':0.575,
                         'mdot_hot (l/s)':0.349,
@@ -1127,7 +1100,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.16
                         }
 
-    p_data['2019_E1'] = {'T cold out (C)':25,
+    p_data['2019_E1'] = {'Name':'real_data',
+                                'T cold out (C)':25,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.608,
                         'mdot_hot (l/s)':0.483,
@@ -1138,7 +1112,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.11
                         }
 
-    p_data['2019_E2'] = {'T cold out (C)':25.4,
+    p_data['2019_E2'] = {'Name':'real_data',
+                                'T cold out (C)':25.4,
                         'T hot out (C)':46.6,
                         'mdot_cold (l/s)':0.608,
                         'mdot_hot (l/s)':0.479,
@@ -1149,7 +1124,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.11
                         }
 
-    p_data['2019_D2'] = {'T cold out (C)':25.2,
+    p_data['2019_D2'] = {'Name':'real_data',
+                                'T cold out (C)':25.2,
                         'T hot out (C)':44.6,
                         'mdot_cold (l/s)':0.575,
                         'mdot_hot (l/s)':0.354,
@@ -1160,7 +1136,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.16
                         }
 
-    p_data['2019_C2'] = {'T cold out (C)':24.2,
+    p_data['2019_C2'] = {'Name':'real_data',
+                                'T cold out (C)':24.2,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
                         'mdot_hot (l/s)':0.476,
@@ -1171,7 +1148,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.09
                         }
 
-    p_data['2019_B2'] = {'T cold out (C)':26.1,
+    p_data['2019_B2'] = {'Name':'real_data',
+                                'T cold out (C)':26.1,
                         'T hot out (C)':48.8,
                         'mdot_cold (l/s)':0.375,
                         'mdot_hot (l/s)':0.462,
@@ -1182,7 +1160,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.03
                         }
 
-    p_data['2019_A2'] = {'T cold out (C)':25.4,
+    p_data['2019_A2'] = {'Name':'real_data',
+                                'T cold out (C)':25.4,
                         'T hot out (C)':44.9,
                         'mdot_cold (l/s)':0.417,
                         'mdot_hot (l/s)':0.299,
@@ -1193,7 +1172,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':1.15
                         }
 
-    p_data['2018_A1'] = {'T cold out (C)':27.2,
+    p_data['2018_A1'] = {'Name':'real_data',
+                                'T cold out (C)':27.2,
                         'T hot out (C)':48.3,
                         'mdot_cold (l/s)':0.317,
                         'mdot_hot (l/s)':0.365,
@@ -1204,7 +1184,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':0.898
                         }
 
-    p_data['2018_C1'] = {'T cold out (C)':28.5,
+    p_data['2018_C1'] = {'Name':'real_data',
+                                'T cold out (C)':28.5,
                         'T hot out (C)':47.8,
                         'mdot_cold (l/s)':0.32,
                         'mdot_hot (l/s)':0.421,
@@ -1215,7 +1196,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':0.894
                         }
 
-    p_data['2018_C2'] = {'T cold out (C)':28.6,
+    p_data['2018_C2'] = {'Name':'real_data',
+                                'T cold out (C)':28.6,
                         'T hot out (C)':47,
                         'mdot_cold (l/s)':0.323,
                         'mdot_hot (l/s)':0.421,
@@ -1226,7 +1208,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':0.894
                         }
 
-    p_data['2018_A2'] = {'T cold out (C)':27.9,
+    p_data['2018_A2'] = {'Name':'real_data',
+                                'T cold out (C)':27.9,
                         'T hot out (C)':44.7,
                         'mdot_cold (l/s)':0.349,
                         'mdot_hot (l/s)':0.349,
@@ -1237,7 +1220,8 @@ def moodle_performance_dict(heat_exchanger = None):
                         'mass (kg)':0.898
                         }
 
-    p_data['2018_B1'] = {'T cold out (C)':30.3,
+    p_data['2018_B1'] = {'Name':'real_data',
+                                'T cold out (C)':30.3,
                         'T hot out (C)':45.5,
                         'mdot_cold (l/s)':0.292,
                         'mdot_hot (l/s)':0.464,
@@ -1271,10 +1255,12 @@ def predict_moodle_cases(heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1
     for hxi in hx_list:
         hx = hx_list[hxi]
 
-        performance = hx_design(hx,k_array) #,invalid_hx_flag 
+        performance = hx_design(hx,k_array) 
+        real_data = hx.real_data
 
 
         hx_data = hx_data.append(performance, ignore_index = True)
+        hx_data = hx_data.append(real_data, ignore_index = True)
 
     #order columns nicely
     hx_data = hx_data[['Name',
@@ -1294,6 +1280,8 @@ def predict_moodle_cases(heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1
         hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
+
+    hx_data.to_excel(f"prediction_data_{date.ctime()}.xlsx", sheet_name="prediction_data", index=False)
 
 
 
