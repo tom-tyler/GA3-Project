@@ -920,6 +920,117 @@ def heat_exchanger_dict(heat_exchanger=None):
                         real_data = real_moodle_data['2019_E1'])
                         #2019 Group E Run 1
 
+    hx_list[9] = HX(tube_number = 19,
+                        baffle_number = 8,
+                        pitch = 11e-3,
+                        tube_length = 212e-3,
+                        plenum_length_1 = 55e-3,
+                        plenum_length_2 = 25e-3,
+                        baffle_gap = 11.22e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 1,
+                        tube_bundle_diameter= 50e-3,
+                        tube_passes = 2,
+                        baffle_spacing_in = 35.5e-3,
+                        baffle_spacing_out = 35.5e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53.9,
+                        T_inc = 19.4,
+                        name = '2019-A2',
+                        real_data = real_moodle_data['2019-A2'])
+                        #2019 Group A Run 2
+
+    hx_list[10] = HX(tube_number = 14,
+                       baffle_number = 11,
+                       pitch = 10e-3,
+                       tube_length = 226e-3,
+                       plenum_length_1 = 55e-3,
+                       plenum_length_2 = 20e-3,
+                       baffle_gap = 14e-3,
+                       baffle_type = 'across_c',
+                       tube_layout='t',
+                       shell_passes = 2,
+                       tube_bundle_diameter= 40e-3,
+                       tube_passes = 2,
+                       baffle_spacing_in = 40.25e-3,
+                       baffle_spacing_out = 15.25e-3,
+                       design_year = 2019,
+                       pump_year = 2019,
+                       T_inh = 55.2,
+                       T_inc = 19.5,
+                       name = '2019-B2',
+                       real_data = real_moodle_data['2019-B2'])
+                       #2019 Group B Run 2
+
+    hx_list[11] = HX(tube_number = 16,
+                        baffle_number = 6,
+                        pitch = 10e-3,
+                        tube_length = 222e-3,
+                        plenum_length_1 = 53e-3,
+                        plenum_length_2 = 24e-3,
+                        baffle_gap = 17.34e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 1,
+                        tube_bundle_diameter= 50e-3,
+                        tube_passes = 2,
+                        baffle_spacing_in = 38.25e-3,
+                        baffle_spacing_out = 38.25e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53.0,
+                        T_inc = 19.6,
+                        name = '2019-C2',
+                        real_data = real_moodle_data['2019-C2'])
+                        #2019 Group C Run 2
+
+    hx_list[12] = HX(tube_number = 20,
+                        baffle_number = 6,
+                        pitch = 11e-3,
+                        tube_length = 193e-3,
+                        plenum_length_1 = 53e-3,
+                        plenum_length_2 = 23e-3,
+                        baffle_gap = 6.4e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 2,
+                        tube_bundle_diameter= 54e-3,
+                        tube_passes = 2,
+                        baffle_spacing_in = 40.75e-3,
+                        baffle_spacing_out = 23.25e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53.2,
+                        T_inc = 19.4,
+                        name = '2019-D2',
+                        real_data = real_moodle_data['2019-D2'])
+                        #2019 Group D Run 2
+
+    hx_list[13] = HX(tube_number = 19,
+                        baffle_number = 8,
+                        pitch = 11e-3,
+                        tube_length = 212e-3,
+                        plenum_length_1 = 55e-3,
+                        plenum_length_2 = 25e-3,
+                        baffle_gap = 11.22e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 1,
+                        tube_bundle_diameter= 50e-3,
+                        tube_passes = 2,
+                        baffle_spacing_in = 35.5e-3,
+                        baffle_spacing_out = 35.5e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53.8,
+                        T_inc = 19.1,
+                        name = '2019-E2',
+                        real_data = real_moodle_data['2019-E2'])
+                        #2019 Group E Run 2
+
+
 
     if heat_exchanger == None:
         return hx_list
