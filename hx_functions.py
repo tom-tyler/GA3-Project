@@ -17,8 +17,8 @@ def dP_tube_drop(hx,liquid,V):
     '''Function returns the pressure drop inside a tube, given the tube velocity, liquid, and the heat exhanger'''
     di = hx.tube.d_inner
     L = hx.tube_length
-
-    f = friction_factor(Re(V,di,liquid))
+    R = Re(V,di,liquid)
+    f = friction_factor(R)
 
     #dP = f*(L/di)*0.5*liquid.rho*V**2
     dP = (4*f*L*hx.tube_passes/di + 4*hx.tube_passes)*liquid.rho*V**2/2
@@ -69,8 +69,8 @@ def dP_nozzle(V,liquid):
 #region
 
 def Re(V,d,liquid):
-    Re = (V*d*liquid.rho)/liquid.mu
-    return Re
+    R = (V*d*liquid.rho)/liquid.mu
+    return R
 
 
 
@@ -83,14 +83,14 @@ def V(m_dot,liquid,area):
 
 # CORRELATIONS
 #region
-def friction_factor(Re, eD=0):
-    A = eD/3.7+(6.7/Re)**0.9
-    fo = 1/(-2*np.log10(eD/3.7-5.02/Re*np.log10(A)))**2
+def friction_factor(R, eD=0):
+    A = eD/3.7+(6.7/R)**0.9
+    fo = 1/(-2*np.log10(eD/3.7-5.02/R*np.log10(A)))**2
 
     if eD:
-        f = fsolve(lambda x: 1/x**0.5+2.0*np.log10(eD/3.7+2.51/Re/x**0.5), fo)
+        f = fsolve(lambda x: 1/x**0.5+2.0*np.log10(eD/3.7+2.51/R/x**0.5), fo)
     else:
-        f = fsolve(lambda x: 1/x**0.5-2.0*np.log10(Re*x**0.5)+0.8, fo)
+        f = fsolve(lambda x: 1/x**0.5-2.0*np.log10(R*x**0.5)+0.8, fo)
     return f[0]
 
 
@@ -339,7 +339,7 @@ def mdot_dP(m_dot,side,liquid,year):
     #mdot_from_dP = interp1d(mdot_dP_array[:,1],mdot_dP_array[:,0],fill_value='extrapolate',kind = 'linear')
     dP_from_mdot = interp1d(mdot_dP_array[:,0],mdot_dP_array[:,1],fill_value='extrapolate',kind = 'cubic')
 
-    dP_new = dP_from_mdot(m_dot/(liquid.rho/1000))
+    dP_new = float(dP_from_mdot(m_dot/(liquid.rho/1000)))
     #m_dot = mdot_from_dP(dP_ovr)*(liquid.rho/1000)
 
     #rel_e_dP = (dP_new - dP_ovr)/dP_ovr
@@ -506,12 +506,12 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
         if dP_tube_ovr < dP_new_h:
             if abs(dP_e_h) < 1:
-                m_h += abs(dP_e_h)*hx.m_increment/10
+                m_h += abs(dP_e_h)*hx.m_increment
             else:
                 m_h += hx.m_increment
         else:
             if abs(dP_e_h) < 1:
-                m_h -= abs(dP_e_h)*hx.m_increment/10
+                m_h -= abs(dP_e_h)*hx.m_increment
             else:
                 m_h -= hx.m_increment
         #endregion
@@ -533,12 +533,12 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
         if dP_shell_ovr < dP_new_c:
             if abs(dP_e_c) < 1:
-                m_c += abs(dP_e_c)*hx.m_increment/10
+                m_c += abs(dP_e_c)*hx.m_increment
             else:
                 m_c += hx.m_increment
         else:
             if abs(dP_e_c) < 1:
-                m_c -= abs(dP_e_c)*hx.m_increment/10
+                m_c -= abs(dP_e_c)*hx.m_increment
             else:
                 m_c -= hx.m_increment
         #endregion
@@ -586,9 +586,15 @@ def hx_design(hx,k_array = np.ones(10)):
     T_e_h = 1
     T_e_c = 1
 
+    Q_counter = 0
     for Q_counter in range(100):
-        if (abs(T_e_h) < hx.accuracy/10) and (abs(T_e_c) < hx.accuracy/10): 
+        if (abs(T_e_h) < hx.accuracy) and (abs(T_e_c) < hx.accuracy): 
             break
+
+        Q_counter += 1
+
+        if Q_counter == 99:
+            print('exceeded max iterations for Q')
 
         #creating hot and cold water objects
         if (T_outh > 70) or (T_outh < 30):
@@ -611,8 +617,27 @@ def hx_design(hx,k_array = np.ones(10)):
         T_e_h = (T_outh_new - T_outh)/T_outh_new
         T_e_c = (T_outc_new - T_outc)/T_outc_new
 
-        T_outh = (T_outh_new + T_outh)/2
-        T_outc = (T_outc_new + T_outc)/2
+        if T_outh < T_outh_new:
+            if abs(T_e_h) < 1:
+                T_outh += abs(T_e_h)*hx.T_increment
+            else:
+                T_outh += hx.T_increment
+        else:
+            if abs(T_e_h) < 1:
+                T_outh -= abs(T_e_h)*hx.T_increment
+            else:
+                T_outh -= hx.T_increment
+        
+        if T_outc < T_outc_new:
+            if abs(T_e_c) < 1:
+                T_outc += abs(T_e_c)*hx.T_increment
+            else:
+                T_outc += hx.T_increment
+        else:
+            if abs(T_e_c) < 1:
+                T_outc -= abs(T_e_c)*hx.T_increment
+            else:
+                T_outc -= hx.T_increment
 
     heat_transfer_ntu = thermal['q_ntu']
     eff_ntu = thermal['eff_ntu']
@@ -626,7 +651,7 @@ def hx_design(hx,k_array = np.ones(10)):
             'mdot_hot (l/s)':m_h/(h_w.rho/1000),
             'dP_cold (bar)':dP_cold/1e5,
             'dP_hot (bar)':dP_hot/1e5,
-            'Q_NTU (kW)':heat_transfer_ntu,
+            'Q_NTU (kW)':heat_transfer_ntu/1000,
             'eff_NTU':eff_ntu,
             'mass (kg)':mk*hx.total_mass()
             }                                                        
@@ -682,6 +707,7 @@ def fit_data(heat_exchanger=None):
 
 
     hx_dict = heat_exchanger_dict(heat_exchanger)
+    print(hx_dict)
     hx_list2 = []
     m_list_hot = np.array([])
     m_list_cold = np.array([])
@@ -691,6 +717,7 @@ def fit_data(heat_exchanger=None):
 
     for hxi in hx_dict:
         hx = hx_dict[hxi]
+        print(hx.name)
 
         experimental_data = hx.real_data
         m_list_hot = np.append(m_list_hot, np.array([experimental_data['mdot_hot (l/s)']]))
@@ -781,7 +808,7 @@ def heat_exchanger_dict(heat_exchanger=None):
                         T_inh = 53.2,
                         T_inc = 13.8,
                         name = 'JPL-2018',
-                        real_data = real_moodle_data['hx_y2018_p2019'])
+                        real_data = real_moodle_data['2019_demo'])
                         
     hx_list[4] = HX(tube_number = 16,
                         baffle_number = 12,
@@ -801,8 +828,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 57.1,
                         T_inc = 19.6,
-                        name = '2019-A1',
-                        real_data = real_moodle_data['2019-A1'])
+                        name = '2019_A1',
+                        real_data = real_moodle_data['2019_A1'])
                         #2019 Group A Run 1
 
     hx_list[5] = HX(tube_number = 14,
@@ -823,8 +850,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                        pump_year = 2019,
                        T_inh = 54.3,
                        T_inc = 19.3,
-                       name = '2019-B1',
-                       real_data = real_moodle_data['2019-B1'])
+                       name = '2019_B1',
+                       real_data = real_moodle_data['2019_B1'])
                        #2019 Group B Run 1
 
     hx_list[6] = HX(tube_number = 16,
@@ -845,8 +872,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 52.5,
                         T_inc = 19.4,
-                        name = '2019-C1',
-                        real_data = real_moodle_data['2019-C1'])
+                        name = '2019_C1',
+                        real_data = real_moodle_data['2019_C1'])
                         #2019 Group C Run 1
 
     hx_list[7] = HX(tube_number = 20,
@@ -855,7 +882,7 @@ def heat_exchanger_dict(heat_exchanger=None):
                         tube_length = 193e-3,
                         plenum_length_1 = 53e-3,
                         plenum_length_2 = 23e-3,
-                        baffle_gap = 6.4e-3,
+                        baffle_gap = 12.8e-3,
                         baffle_type = 'across_c',
                         tube_layout='t',
                         shell_passes = 2,
@@ -867,8 +894,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 52.7,
                         T_inc = 19.0,
-                        name = '2019-D1',
-                        real_data = real_moodle_data['2019-D1'])
+                        name = '2019_D1',
+                        real_data = real_moodle_data['2019_D1'])
                         #2019 Group D Run 1
 
     hx_list[8] = HX(tube_number = 19,
@@ -889,8 +916,8 @@ def heat_exchanger_dict(heat_exchanger=None):
                         pump_year = 2019,
                         T_inh = 53.4,
                         T_inc = 18.9,
-                        name = '2019-E1',
-                        real_data = real_moodle_data['2019-E1'])
+                        name = '2019_E1',
+                        real_data = real_moodle_data['2019_E1'])
                         #2019 Group E Run 1
 
 
@@ -1032,8 +1059,6 @@ def moodle_performance_dict(heat_exchanger = None):
                         'eff_NTU':0.19,
                         'mass (kg)':1.09
                         }
-
-        # to do! from here
 
     p_data['2019_B2'] = {'T cold out (C)':26.1,
                         'T hot out (C)':48.8,

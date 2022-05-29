@@ -66,7 +66,7 @@ class HX:
 
         #accuracy of calculations
         self.accuracy = 0.05
-        self.T_increment = 0.05
+        self.T_increment = 5.0
         self.m_increment = 0.1
 
         #input heat exchanger parameters
@@ -214,8 +214,11 @@ class HX:
         self.d_otl = tube_bundle_diameter
         self.D_ctl = self.d_otl - self.tube.d_outer
 
-        #derived angle parameters - MAY NEED TO DIVIDE BY SHELL PASSES
-        self.theta_ctl = 2*np.arccos((self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut))
+        #derived angle parameters
+        arg_ctl = (self.shell.d_inner/self.D_ctl) * (1 - 2*self.baffle_cut)
+        if abs(arg_ctl) > 1:
+            arg_ctl = 0.99
+        self.theta_ctl = 2*np.arccos(arg_ctl)/self.shell_passes
         self.theta_ds = 2*np.arccos(1 - 2*self.baffle_cut)/self.shell_passes
 
         #F factors
@@ -230,7 +233,7 @@ class HX:
         self.Sm = self.baffle_spacing * ((self.shell.d_inner - self.d_otl) + ((self.d_otl - self.tube.d_outer)*(self.pitch - self.tube.d_outer))/(self.pitch*self.area_adjustment_factor))/self.shell_passes
         self.Sb = self.baffle_spacing * (self.shell.d_inner - self.d_otl - self.tube.d_outer/2)/self.shell_passes
         self.Ssb = self.shell.d_inner * self.delta_sb* (np.pi - 0.5*self.theta_ds)
-        self.Stb = (np.pi/4) * ((self.tube.d_outer + self.delta_tb)**2 -self.tube.d_outer**2) * self.tube_number * (1 - self.Fw)
+        self.Stb = (np.pi/4) * ((self.tube.d_outer + self.delta_tb)**2 - self.tube.d_outer**2) * self.tube_number * (1 - self.Fw)
         self.A_shell = self.Sm
 
         #derived area ratios
@@ -267,16 +270,7 @@ class HX:
         self.Jb = np.exp(-1.25*(self.Sb/self.Sm))
         self.Jr = 1 #=1 due to high Re
         self.Js = unequal_baffle_spacing_Bell(self.baffle_number,self.baffle_spacing,self.baffle_spacing_in,self.baffle_spacing_out)
-        #endregion
-
-
-        
-        
-        
-        
-
-        
-        
+        #endregion       
         
 
     def total_mass(self):
