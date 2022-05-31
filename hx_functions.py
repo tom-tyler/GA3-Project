@@ -974,6 +974,73 @@ def heat_exchanger_dict(heat_exchanger=None):
                         real_data = real_moodle_data['2019_D2'])
                         #2019 Group D Run 2
 
+    hx_list[13] = HX(tube_number = 12,
+                        baffle_number = 8,
+                        pitch = 12e-3,
+                        tube_length = 259e-3,
+                        plenum_length_1 = 53e-3,
+                        plenum_length_2 = 30e-3,
+                        baffle_gap = 15.36e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 1,
+                        tube_bundle_diameter= 52e-3,
+                        tube_passes = 2,
+                        baffle_spacing_in = 49e-3,
+                        baffle_spacing_out = 49e-3,
+                        design_year = 2022,
+                        pump_year = 2022,
+                        T_inh = 53,
+                        T_inc = 19.5,
+                        name = '2022_D',
+                        real_data = real_moodle_data['2022_D'])
+                        #2022 Group D (Tin s are estimates)
+
+    hx_list[14] = HX(tube_number = 24,
+                        baffle_number = 4,
+                        pitch = 10e-3,
+                        tube_length = 145e-3,
+                        plenum_length_1 = 53e-3,
+                        plenum_length_2 = 41e-3,
+                        baffle_gap = 13.85e-3, #v approximate bc angled
+                        baffle_type = 'across_c',
+                        tube_layout='t', #ish dodgy bc so many tubes
+                        shell_passes = 1,
+                        tube_bundle_diameter= 56e-3,
+                        tube_passes = 4,
+                        baffle_spacing_in = 40e-3,
+                        baffle_spacing_out = 40e-3,
+                        design_year = 2022,
+                        pump_year = 2022,
+                        T_inh = 53,
+                        T_inc = 19.5,
+                        name = '2022_E',
+                        real_data = real_moodle_data['2022_E'])
+                        #2022 Group E (Tin s are estimates)
+
+    hx_list[15] = HX(tube_number = 20,
+                        baffle_number = 6,
+                        pitch = 10e-3,
+                        tube_length = 172e-3,
+                        plenum_length_1 = 58e-3,
+                        plenum_length_2 = 23e-3,
+                        baffle_gap = 20e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 2,
+                        tube_bundle_diameter= 54e-3,
+                        tube_passes = 4,
+                        baffle_spacing_in = 41.5e-3,
+                        baffle_spacing_out = 21.5e-3,
+                        design_year = 2022,
+                        pump_year = 2022,
+                        T_inh = 53,
+                        T_inc = 19.5,
+                        name = '2022_F',
+                        real_data = real_moodle_data['2022_F'])
+                        #2022 Group F (Tin s are estimates)
+    
+
     # hx_list[13] = HX(tube_number = 19,
     #                     baffle_number = 8,
     #                     pitch = 11e-3,
