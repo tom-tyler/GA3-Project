@@ -422,7 +422,7 @@ def U_inside(hi,ho,hx,k_copper = 398):
 
 # THERMAL DESIGN
 
-def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,z1=1,z2=1,z3=1):
+def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     
     #heat capacities
     Cc = m_c*c_w.cp
@@ -436,7 +436,7 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,z1=1,z2=1,z3=1):
 
     cmin = min(Cc,Ch)
     cmax = max(Cc,Ch)
-    qmax = cmin * (T_inh - T_inc) #maximum possible heat tranfer
+    qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
     NTU = z1*(U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
@@ -447,8 +447,8 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,T_inh,T_inc,z1=1,z2=1,z3=1):
 
     q_ntu = qmax * e
 
-    T_outc = q_ntu/Cc + T_inc
-    T_outh = T_inh - q_ntu/Ch
+    T_outc = q_ntu/Cc + hx.T_inc
+    T_outh = hx.T_inh - q_ntu/Ch
 
     thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
     return thermal
@@ -598,7 +598,7 @@ def hx_design(hx,k_array = np.ones(10)):
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
     #THERMAL DESIGN
-    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,hx.T_inh,hx.T_inc,z1,z2,z3)
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1,z2,z3)
     T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
 
     heat_transfer_ntu = thermal['q_ntu']
@@ -1239,6 +1239,39 @@ def moodle_performance_dict(heat_exchanger = None):
         hx_singular[heat_exchanger] = p_data[heat_exchanger]
         return hx_singular
 
+
+def dict2022(heat_exchanger = None):
+
+    hx_list = {}
+    
+    hx_list['2022_A'] = HX(tube_number = ,
+                        baffle_number = ,
+                        pitch = e-3,
+                        tube_length = e-3,
+                        plenum_length_1 = e-3,
+                        plenum_length_2 = e-3,
+                        baffle_gap = e-3,
+                        baffle_type = 'across_c',
+                        tube_layout = 't',
+                        shell_passes = ,
+                        tube_bundle_diameter = ,
+                        tube_passes = ,
+                        design_year = 2022,
+                        pump_year = 2022,
+                        T_inh = 60,
+                        T_inc = 20,
+                        baffle_spacing_in = ,
+                        baffle_spacing_out = ,
+                        name = '2022_A',
+                        real_data = None)
+
+    if heat_exchanger == None:
+        return hx_list
+    else:
+        hx_singular = {}
+        hx_singular[heat_exchanger] = hx_list[heat_exchanger]
+        return hx_singular
+
 #endregion
 
 #OTHER TOOLS
@@ -1246,14 +1279,24 @@ def moodle_performance_dict(heat_exchanger = None):
 
 # HX_MOODLE_DATA: tool which outputs a dataframe of data for the moodle heat exchangers
 
-def predict_moodle_cases(heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False):
+def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False,corrected = False):
 
-
-    hx_list = heat_exchanger_dict(heat_exchanger)
+    if data == 'moodle':
+        hx_list = heat_exchanger_dict(heat_exchanger)
+    elif data == '2022':
+        hx_list = dict_2022(heat_exchanger)
+    else:
+        print('choose a correct dataset')
     hx_data = pd.DataFrame()
 
     for hxi in hx_list:
         hx = hx_list[hxi]
+
+        if corrected == True:
+            hx.T_inh = 60
+            hx.T_inc = 20
+        else:
+            pass
 
         performance = hx_design(hx,k_array) 
         real_data = hx.real_data
