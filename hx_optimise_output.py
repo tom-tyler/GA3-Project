@@ -19,4 +19,4 @@ from hx_classes import water
 
 k_array = hxf.fit_data()
 
-hxf.predict_moodle_cases(k_array=k_array)
+hxf.predict_hx(data = 'moodle',k_array=k_array, corrected = True)
