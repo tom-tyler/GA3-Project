@@ -422,14 +422,14 @@ def U_inside(hi,ho,hx,k_copper = 398):
 
 # THERMAL DESIGN
 
-def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
+def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1,z4=1):
     
     #heat capacities
     Cc = m_c*c_w.cp
     Ch = m_h*h_w.cp
 
-    hi = z1*h_inner(m_h, h_w, hx)
-    ho = z2*h_outer(m_c, c_w, hx)
+    hi = h_inner(m_h, h_w, hx)
+    ho = h_outer(m_c, c_w, hx)
     
     U = U_inside(hi,ho,hx)
     A_con = hx.convection_area
@@ -437,13 +437,13 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     cmin = min(Cc,Ch)
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
-    Cr = cmin/cmax #ratio of specific heats 
-    NTU = (U * A_con)/cmin
+    Cr =  cmin/cmax #ratio of specific heats 
+    NTU = z2*(U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
     e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
     ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
-    e = z3 * ((ez) - 1) / ((ez) - Cr)
+    e = z2*((ez) - 1) / ((ez) - Cr)
 
     q_ntu = qmax * e
 
@@ -561,7 +561,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
 # HX DESIGN: tool which outputs performance for a given heat exchanger in a dictionary
 
-def hx_design(hx,k_array = np.ones(10)):
+def hx_design(hx,k_array = np.ones(11)):
 
     #curve fitting constants
     k1 = k_array[0]
@@ -573,7 +573,8 @@ def hx_design(hx,k_array = np.ones(10)):
     z1 = k_array[6]
     z2 = k_array[7]
     z3 = k_array[8]
-    mk = k_array[9]
+    z4 = k_array[9]
+    mk = k_array[10]
 
     #initial guesses for mass flowrate:
     m_h = 0.45 #initial guess for hot mass flow rate
@@ -598,7 +599,7 @@ def hx_design(hx,k_array = np.ones(10)):
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
     #THERMAL DESIGN
-    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1,z2,z3)
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1=z1,z2=z2,z3=z3,z4=z4)
     T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
 
     heat_transfer_ntu = thermal['q_ntu']
@@ -631,7 +632,7 @@ def hx_design(hx,k_array = np.ones(10)):
 
 def f_m_hot(i_list,k1,k2,k3):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([k1,k2,k3,1,1,1,1,1,1,1])
+    k_array = np.array([k1,k2,k3,1,1,1,1,1,1,1,1])
     m_hot_list = []
     for i in i_list:
         hx = hx_dict[i]
@@ -641,27 +642,18 @@ def f_m_hot(i_list,k1,k2,k3):
 
 def f_m_cold(i_list,k4,k5,k6):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,k4,k5,k6,1,1,1,1])
+    k_array = np.array([1,1,1,k4,k5,k6,1,1,1,1,1])
     m_cold_list = []
     for i in i_list:
         hx = hx_dict[i]
         m_cold_list.append(hx_design(hx,k_array)['mdot_cold (l/s)'])
 
     return np.array(m_cold_list)
-
-def f_thermal(i_list,z1,z2,z3):
-    hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,1,1,1,z1,z2,z3,1])
-    Q_predict_list = []
-    for i in i_list:
-        hx = hx_dict[i]
-        Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
-
-    return np.array(Q_predict_list)
+    
 
 def f_mass(i_list,mk):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,1,1,1,1,1,1,mk])
+    k_array = np.array([1,1,1,1,1,1,1,1,1,1,mk])
     mass_predict_list = []
     for i in i_list:
         hx = hx_dict[i]
@@ -674,9 +666,11 @@ def fit_data(heat_exchanger=None):
 
     hx_dict = heat_exchanger_dict(heat_exchanger)
     print(hx_dict)
-    hx_list2 = []
+
     m_list_hot = np.array([])
     m_list_cold = np.array([])
+    th_list = np.array([])
+    tc_list = np.array([])
     q_list = np.array([])
     mass_list = np.array([])
     i_list = np.array(list(hx_dict.keys()))
@@ -688,6 +682,8 @@ def fit_data(heat_exchanger=None):
         experimental_data = hx.real_data
         m_list_hot = np.append(m_list_hot, np.array([experimental_data['mdot_hot (l/s)']]))
         m_list_cold = np.append(m_list_cold, np.array([experimental_data['mdot_cold (l/s)']]))
+        th_list = np.append(th_list, np.array([experimental_data['T hot out (C)']]))
+        tc_list = np.append(tc_list, np.array([experimental_data['T cold out (C)']]))
         q_list = np.append(q_list, np.array([experimental_data['Q_NTU_corr (kW)']]))
         mass_list = np.append(mass_list,np.array([experimental_data['mass (kg)']]))
 
@@ -695,15 +691,43 @@ def fit_data(heat_exchanger=None):
     k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0,np.inf),p0 = np.array([1,1,1]))
     print('finding k4 k5 k6')
     k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=(0,np.inf),p0 = np.array([1,1,1]))
-    print('finding z1 z2 z3')
-    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+
+
+
+    def f_th(i_list,z1,z2):
+        hx_dict = heat_exchanger_dict()
+        k_array = np.array([k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2],z1,z2,1,1,1])
+        th_predict_list = []
+        for i in i_list:
+            hx = hx_dict[i]
+            th_predict_list.append(hx_design(hx,k_array)['T hot out (C)'])
+
+        return np.array(th_predict_list)
+    
+    # def f_tc(i_list,z3,z4):
+    #     hx_dict = heat_exchanger_dict()
+    #     k_array = np.array([k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2],z1,z2,z3,z4,1])
+    #     Q_predict_list = []
+    #     for i in i_list:
+    #         hx = hx_dict[i]
+    #         Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
+
+    #     return np.array(Q_predict_list)
+
+    # print('finding z1 z2 z3 z4')
+    # z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1,1]))
+
+    print('finding z1 z2 z3 z4')
+    z1z2, pcov3 = curve_fit(f_th,i_list,th_list,bounds=(0,np.inf),p0 = np.array([1,1]))
+
     print('findig mk')
     mk,pcov4 = curve_fit(f_mass,i_list,mass_list,bounds=(0,np.inf),p0 = np.array(0.9))
 
     k_array = np.append(k1k2k3,k4k5k6)
-    k_array = np.append(k_array,z1z2z3)
+    k_array = np.append(k_array,z1z2)
+    k_array = np.append(k_array,np.array([1,1]))
     k_array = np.append(k_array,mk)
-    print('k1,k2,k3,k4,k5,k6,z1,z2,z3,mk = ',k_array)
+    print('k1,k2,k3,k4,k5,k6,z1,z2,z3,z4,mk = ',k_array)
     return k_array
 
 #endregion
@@ -1648,7 +1672,7 @@ def dict_2022(heat_exchanger = None):
 
 # HX_MOODLE_DATA: tool which outputs a dataframe of data for the moodle heat exchangers
 
-def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False):
+def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1,1,1]),sort_data = False):
 
     if data == 'moodle':
         hx_list = heat_exchanger_dict(heat_exchanger)
@@ -1689,7 +1713,7 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel(f"prediction_data_{data}final.xlsx", sheet_name="prediction_data", index=False)
+    hx_data.to_excel(f"prediction_data_{data}.xlsx", sheet_name="prediction_data", index=False)
 
 
 

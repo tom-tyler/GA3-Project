@@ -576,3 +576,16 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
     #                     'eff_NTU':0.24,
     #                     'mass (kg)':0.935
     #                     }
+
+
+        # def f_thermal(i_list,z1,z2,z3,z4):
+    #     hx_dict = heat_exchanger_dict()
+    #     k_array = np.array([k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2],z1,z2,z3,z4,1])
+    #     Q_predict_list = []
+    #     for i in i_list:
+    #         hx = hx_dict[i]
+    #         Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
+
+    #     return np.array(Q_predict_list)
+
+    [k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2]
