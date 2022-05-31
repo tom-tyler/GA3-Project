@@ -17,7 +17,7 @@ from hx_classes import water
 
 #print(hxf.brute_opt_2())
 
-k_array = hxf.fit_data()
+k_array = [1,1,1,1,1,1,1,1,1,1,1]
 
 print(k_array)
 

@@ -7,16 +7,16 @@ tn = []
 
 k_array = [5.09582324e-13, 1.06322974e-02, 1.60725045e+01, 7.70041192e-14,
 9.74222768e-01, 7.39759976e+00, 6.78054364e+01, 7.84344345e-01,
-3.25600821e-01, 8.46334898e-01]
+3.25600821e-01, 8.46334898e-01]#fit_data() #once this is done once just copy the array to save time
 
-for n in range(1,200):
+for n in range(5,8):
     hx =  HX(tube_number = 20,
-             baffle_number = 6,
+             baffle_number = n,
              pitch = 10e-3,
              tube_length = 172e-3,
              plenum_length_1 = 58e-3,
              plenum_length_2 = 23e-3,
-             baffle_gap = n/10000,
+             baffle_gap = 20e-3,
              baffle_type = 'across_c',
              tube_layout='t',
              shell_passes = 2,
@@ -34,6 +34,12 @@ for n in range(1,200):
     tn.append(n)
     performance.append(hx_design(hx,k_array)['Q_NTU (kW)'])
 
+#use this number for when changing n by a small amount
+#gives the difference between the bigest and smallest value
+percent_sensitivity = (abs(performance[0] - performance[len(performance)-1])/performance[(len(performance)-1)])*100 
+
 plt.plot(tn,performance)
+plt.legend()
 plt.show()
 
+print(percent_sensitivity)
