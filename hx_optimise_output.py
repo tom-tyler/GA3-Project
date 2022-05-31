@@ -18,7 +18,7 @@ import numpy as np
 
 #print(hxf.brute_opt_2())
 
-k_array = [1,1,1,1,1,1,1,1,1,1,1]
+k_array = hxf.fit_data()
 
 print(k_array)
 
