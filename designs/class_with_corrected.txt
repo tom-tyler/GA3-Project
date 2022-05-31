@@ -1,0 +1,192 @@
+p_data['2019_demo'] = {'T cold out (C)':21,
+                       'T hot out (C)':45.3,
+                       'mdot_cold (l/s)':0.525,
+                       'mdot_hot (l/s)':0.356,
+                       'dP_cold (bar)':0.49,
+                       'dP_hot (bar)':0.163,
+                       'Q_NTU (kW)':15.82,
+                       'Q_NTU_corr (kW)':16.06,
+                       'eff_NTU':0.2,
+                       'mass (kg)':0
+                       }
+
+p_data['2019_A1'] = {'T cold out (C)':26.4,
+                     'T hot out (C)':47.2,
+                     'mdot_cold (l/s)':0.417,
+                     'mdot_hot (l/s)':0.437,
+                     'dP_cold (bar)':0.299,
+                     'dP_hot (bar)':0.391,
+                     'Q_NTU (kW)':11.98,
+                     'Q_NTU_corr (kW)':12.78,
+                     'eff_NTU':0.26,
+                     'mass (kg)':1.15
+                     }
+
+p_data['2019_B1'] = {'T cold out (C)':26,
+                     'T hot out (C)':48,
+                     'mdot_cold (l/s)':0.375,
+                     'mdot_hot (l/s)':0.458,
+                     'dP_cold (bar)':0.462,
+                     'dP_hot (bar)':0.219,
+                     'Q_NTU (kW)':11.22,
+                     'Q_NTU_corr (kW)':12.82,
+                     'eff_NTU':0.21,
+                     'mass (kg)':1.03
+                     }
+
+p_data['2019_C1'] = {'T cold out (C)':24.1,
+                     'T hot out (C)':46.2,
+                     'mdot_cold (l/s)':0.592,
+                     'mdot_hot (l/s)':0.275,
+                     'dP_cold (bar)':0.462,
+                     'dP_hot (bar)':0.212,
+                     'Q_NTU (kW)':11.77,
+                     'Q_NTU_corr (kW)':14.23,
+                     'eff_NTU':0.19,
+                     'mass (kg)':1.09
+                     }
+
+p_data['2019_D1'] = {'T cold out (C)':25,
+                     'T hot out (C)':43.6,
+                     'mdot_cold (l/s)':0.575,
+                     'mdot_hot (l/s)':0.362,
+                     'dP_cold (bar)':0.349,
+                     'dP_hot (bar)':0.348,
+                     'Q_NTU (kW)':13.71,
+                     'Q_NTU_corr (kW)':16.27,
+                     'eff_NTU':0.28,
+                     'mass (kg)':1.16
+                     }
+
+p_data['2019_E1'] = {'T cold out (C)':25,
+                     'T hot out (C)':46.2,
+                     'mdot_cold (l/s)':0.608,
+                     'mdot_hot (l/s)':0.325,
+                     'dP_cold (bar)':0.483,
+                     'dP_hot (bar)':0.2,
+                     'Q_NTU (kW)':14.87,
+                     'Q_NTU_corr (kW)':17.24,
+                     'eff_NTU':0.22,
+                     'mass (kg)':1.11
+                     }
+
+p_data['2019_E2'] = {'T cold out (C)':25.4,
+                     'T hot out (C)':46.6,
+                     'mdot_cold (l/s)':0.608,
+                     'mdot_hot (l/s)':0.322,
+                     'dP_cold (bar)':0.479,
+                     'dP_hot (bar)':0.201,
+                     'Q_NTU (kW)':15.07,
+                     'Q_NTU_corr (kW)':17.37,
+                     'eff_NTU':0.22,
+                     'mass (kg)':1.11
+                     }
+
+p_data['2019_D2'] = {'T cold out (C)':25.2,
+                     'T hot out (C)':44.6,
+                     'mdot_cold (l/s)':0.575,
+                     'mdot_hot (l/s)':0.359,
+                     'dP_cold (bar)':0.354,
+                     'dP_hot (bar)':0.348,
+                     'Q_NTU (kW)':13.2,
+                     'Q_NTU_corr (kW)':15.62,
+                     'eff_NTU':0.27,
+                     'mass (kg)':1.16
+                     }
+
+p_data['2019_C2'] = {'T cold out (C)':24.2,
+                     'T hot out (C)':46.2,
+                     'mdot_cold (l/s)':0.592,
+                     'mdot_hot (l/s)':0.269,
+                     'dP_cold (bar)':0.476,
+                     'dP_hot (bar)':0.199,
+                     'Q_NTU (kW)':12.32,
+                     'Q_NTU_corr (kW)':14.76,
+                     'eff_NTU':0.19,
+                     'mass (kg)':1.09
+                     }
+
+p_data['2019_B2'] = {'T cold out (C)':26.1,
+                     'T hot out (C)':48.8,
+                     'mdot_cold (l/s)':0.375,
+                     'mdot_hot (l/s)':0.449,
+                     'dP_cold (bar)':0.462,
+                     'dP_hot (bar)':0.223,
+                     'Q_NTU (kW)':11.23,
+                     'Q_NTU_corr (kW)':12.59,
+                     'eff_NTU':0.2,
+                     'mass (kg)':1.03
+                     }
+
+p_data['2019_A2'] = {'T cold out (C)':25.4,
+                     'T hot out (C)':44.9,
+                     'mdot_cold (l/s)':0.417,
+                     'mdot_hot (l/s)':0.422,
+                     'dP_cold (bar)':0.299,
+                     'dP_hot (bar)':0.4,
+                     'Q_NTU (kW)':10.73,
+                     'Q_NTU_corr (kW)':12.44,
+                     'eff_NTU':0.25,
+                     'mass (kg)':1.15
+                     }
+
+p_data['2018_A1'] = {'T cold out (C)':27.2,
+                     'T hot out (C)':48.3,
+                     'mdot_cold (l/s)':0.317,
+                     'mdot_hot (l/s)':0.365,
+                     'dP_cold (bar)':0.202,
+                     'dP_hot (bar)':0.292,
+                     'Q_NTU (kW)':8.91,
+                     'Q_NTU_corr (kW)':10.52,
+                     'eff_NTU':0.2,
+                     'mass (kg)':0.898
+                     }
+
+p_data['2018_C1'] = {'T cold out (C)':28.5,
+                     'T hot out (C)':47.8,
+                     'mdot_cold (l/s)':0.32,
+                     'mdot_hot (l/s)':0.421,
+                     'dP_cold (bar)':0.241,
+                     'dP_hot (bar)':0.179,
+                     'Q_NTU (kW)':9.39,
+                     'Q_NTU_corr (kW)':11.74,
+                     'eff_NTU':0.22,
+                     'mass (kg)':0.894
+                     }
+
+p_data['2018_C2'] = {'T cold out (C)':28.6,
+                     'T hot out (C)':47,
+                     'mdot_cold (l/s)':0.323,
+                     'mdot_hot (l/s)':0.421,
+                     'dP_cold (bar)':0.244,
+                     'dP_hot (bar)':0.179,
+                     'Q_NTU (kW)':8.62,
+                     'Q_NTU_corr (kW)':11.5,
+                     'eff_NTU':0.22,
+                     'mass (kg)':0.894
+                     }
+
+p_data['2018_A2'] = {'T cold out (C)':27.9,
+                     'T hot out (C)':44.7,
+                     'mdot_cold (l/s)':0.349,
+                     'mdot_hot (l/s)':0.349,
+                     'dP_cold (bar)':0.199,
+                     'dP_hot (bar)':0.289,
+                     'Q_NTU (kW)':8.22,
+                     'Q_NTU_corr (kW)':11.66,
+                     'eff_NTU':0.2,
+                     'mass (kg)':0.898
+                     }
+
+p_data['2018_B1'] = {'T cold out (C)':30.3,
+                     'T hot out (C)':45.5,
+                     'mdot_cold (l/s)':0.292,
+                     'mdot_hot (l/s)':0.464,
+                     'dP_cold (bar)':0.285,
+                     'dP_hot (bar)':0.13,
+                     'Q_NTU (kW)':7.55,
+                     'Q_NTU_corr (kW)':11.61,
+                     'eff_NTU':0.24,
+                     'mass (kg)':0.935
+                     }
+

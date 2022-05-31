@@ -1513,27 +1513,7 @@ def dict_2022(heat_exchanger = None):
                      real_data=None
                      )
 
-    hx_list['11'] = HX(tube_number=20,
-                     baffle_number=4,
-                     pitch=10e-3,
-                     tube_length=174e-3,
-                     plenum_length_1=50e-3,
-                     plenum_length_2=46.e-35,
-                     baffle_gap=09.75e-3,
-                     baffle_type='across_c',
-                     tube_layout='t',
-                     shell_passes=1,
-                     tube_bundle_diameter=60e-3,
-                     tube_passes=2,
-                     design_year=2022,
-                     pump_year=2022,
-                     T_inh=60,
-                     T_inc=20,
-                     baffle_spacing_in=39e-3,
-                     baffle_spacing_out=39e-3,
-                     name='2022_C',
-                     real_data=None
-                     )
+
 
     hx_list['12'] = HX(tube_number=12,
                      baffle_number=8,
@@ -1600,6 +1580,29 @@ def dict_2022(heat_exchanger = None):
                      name='2022_F',
                      real_data=None
                      )
+    
+    hx_list['15'] = HX(tube_number = 13,
+                        baffle_number = 8,
+                        pitch = 12e-3,
+                        tube_length = 212e-3,
+                        plenum_length_1 = 53.5e-3,
+                        plenum_length_2 = 53.5e-3,
+                        baffle_gap = 13.9e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 2,
+                        tube_bundle_diameter= 56e-3,
+                        tube_passes = 4,
+                        baffle_spacing_in = 38e-3,
+                        baffle_spacing_out = 38e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53,
+                        T_inc = 19.5,
+                        name = 'BLIND_TEST',
+                        real_data = None
+                        )
+                        #Blind test case
 
 
     if heat_exchanger == None:
