@@ -1233,7 +1233,6 @@ def moodle_performance_dict(heat_exchanger = None):
 
     p_data = {}
 
-    #correct
     p_data['hx_y2018_p2022'] = {'Name':'real_data',
                                 'T cold out (C)':26.1,   
                                 'T hot out (C)':46.8,
@@ -1242,11 +1241,11 @@ def moodle_performance_dict(heat_exchanger = None):
                                 'dP_cold (bar)':0.277,
                                 'dP_hot (bar)':0.137,
                                 'Q_NTU (kW)':12.460,
+                                'Q_NTU_corr (kW)':14.79,
                                 'eff_NTU':0.197,
                                 'mass (kg)':1.466
                                 }
 
-    #correct
     p_data['hx_y2017B_p2022'] = {'Name':'real_data',
                                 'T cold out (C)':30.1,   
                                 'T hot out (C)':43.4,
@@ -1255,204 +1254,401 @@ def moodle_performance_dict(heat_exchanger = None):
                                 'dP_cold (bar)':0.471,
                                 'dP_hot (bar)':0.212,
                                 'Q_NTU (kW)':8.520,
+                                'Q_NTU_corr (kW)':13.01,
                                 'eff_NTU':0.314,
                                 'mass (kg)':1.021
                                 }
 
-    #correct
-
-
-    p_data['2019_demo'] = {'Name':'real_data',
-                                'T cold out (C)':21,
+    p_data['2019_demo'] = {'T cold out (C)':21,
                        'T hot out (C)':45.3,
                        'mdot_cold (l/s)':0.525,
-                       'mdot_hot (l/s)':0.490,
-                       'dP_cold (bar)':0.356,
+                       'mdot_hot (l/s)':0.356,
+                       'dP_cold (bar)':0.49,
                        'dP_hot (bar)':0.163,
                        'Q_NTU (kW)':15.82,
-                       'eff_NTU':0.198,
-                       'mass (kg)':1.466
+                       'Q_NTU_corr (kW)':16.06,
+                       'eff_NTU':0.2,
+                       'mass (kg)':0
                        }
 
-    p_data['2019_A1'] = {'Name':'real_data',
-                                'T cold out (C)':26.4,
+    p_data['2019_A1'] = {'T cold out (C)':26.4,
                         'T hot out (C)':47.2,
                         'mdot_cold (l/s)':0.417,
-                        'mdot_hot (l/s)':0.299,
-                        'dP_cold (bar)':0.437,
+                        'mdot_hot (l/s)':0.437,
+                        'dP_cold (bar)':0.299,
                         'dP_hot (bar)':0.391,
                         'Q_NTU (kW)':11.98,
+                        'Q_NTU_corr (kW)':12.78,
                         'eff_NTU':0.26,
                         'mass (kg)':1.15
                         }
 
-    p_data['2019_B1'] = {'Name':'real_data',
-                                'T cold out (C)':26,
+    p_data['2019_B1'] = {'T cold out (C)':26,
                         'T hot out (C)':48,
                         'mdot_cold (l/s)':0.375,
-                        'mdot_hot (l/s)':0.462,
-                        'dP_cold (bar)':0.458,
+                        'mdot_hot (l/s)':0.458,
+                        'dP_cold (bar)':0.462,
                         'dP_hot (bar)':0.219,
                         'Q_NTU (kW)':11.22,
+                        'Q_NTU_corr (kW)':12.82,
                         'eff_NTU':0.21,
                         'mass (kg)':1.03
                         }
 
-    p_data['2019_C1'] = {'Name':'real_data',
-                                'T cold out (C)':24.1,
+    p_data['2019_C1'] = {'T cold out (C)':24.1,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
-                        'mdot_hot (l/s)':0.462,
-                        'dP_cold (bar)':0.275,
+                        'mdot_hot (l/s)':0.275,
+                        'dP_cold (bar)':0.462,
                         'dP_hot (bar)':0.212,
                         'Q_NTU (kW)':11.77,
+                        'Q_NTU_corr (kW)':14.23,
                         'eff_NTU':0.19,
                         'mass (kg)':1.09
                         }
 
-    p_data['2019_D1'] = {'Name':'real_data',
-                                'T cold out (C)':25,
+    p_data['2019_D1'] = {'T cold out (C)':25,
                         'T hot out (C)':43.6,
                         'mdot_cold (l/s)':0.575,
-                        'mdot_hot (l/s)':0.349,
-                        'dP_cold (bar)':0.362,
+                        'mdot_hot (l/s)':0.362,
+                        'dP_cold (bar)':0.349,
                         'dP_hot (bar)':0.348,
                         'Q_NTU (kW)':13.71,
+                        'Q_NTU_corr (kW)':16.27,
                         'eff_NTU':0.28,
                         'mass (kg)':1.16
                         }
 
-    p_data['2019_E1'] = {'Name':'real_data',
-                                'T cold out (C)':25,
+    p_data['2019_E1'] = {'T cold out (C)':25,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.608,
-                        'mdot_hot (l/s)':0.483,
-                        'dP_cold (bar)':0.325,
+                        'mdot_hot (l/s)':0.325,
+                        'dP_cold (bar)':0.483,
                         'dP_hot (bar)':0.2,
                         'Q_NTU (kW)':14.87,
+                        'Q_NTU_corr (kW)':17.24,
                         'eff_NTU':0.22,
                         'mass (kg)':1.11
                         }
 
-    p_data['2019_E2'] = {'Name':'real_data',
-                                'T cold out (C)':25.4,
+    p_data['2019_E2'] = {'T cold out (C)':25.4,
                         'T hot out (C)':46.6,
                         'mdot_cold (l/s)':0.608,
-                        'mdot_hot (l/s)':0.479,
-                        'dP_cold (bar)':0.322,
+                        'mdot_hot (l/s)':0.322,
+                        'dP_cold (bar)':0.479,
                         'dP_hot (bar)':0.201,
                         'Q_NTU (kW)':15.07,
+                        'Q_NTU_corr (kW)':17.37,
                         'eff_NTU':0.22,
                         'mass (kg)':1.11
                         }
 
-    p_data['2019_D2'] = {'Name':'real_data',
-                                'T cold out (C)':25.2,
+    p_data['2019_D2'] = {'T cold out (C)':25.2,
                         'T hot out (C)':44.6,
                         'mdot_cold (l/s)':0.575,
-                        'mdot_hot (l/s)':0.354,
-                        'dP_cold (bar)':0.359,
+                        'mdot_hot (l/s)':0.359,
+                        'dP_cold (bar)':0.354,
                         'dP_hot (bar)':0.348,
                         'Q_NTU (kW)':13.2,
+                        'Q_NTU_corr (kW)':15.62,
                         'eff_NTU':0.27,
                         'mass (kg)':1.16
                         }
 
-    p_data['2019_C2'] = {'Name':'real_data',
-                                'T cold out (C)':24.2,
+    p_data['2019_C2'] = {'T cold out (C)':24.2,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
-                        'mdot_hot (l/s)':0.476,
-                        'dP_cold (bar)':0.269,
+                        'mdot_hot (l/s)':0.269,
+                        'dP_cold (bar)':0.476,
                         'dP_hot (bar)':0.199,
                         'Q_NTU (kW)':12.32,
+                        'Q_NTU_corr (kW)':14.76,
                         'eff_NTU':0.19,
                         'mass (kg)':1.09
                         }
 
-    p_data['2019_B2'] = {'Name':'real_data',
-                                'T cold out (C)':26.1,
+    p_data['2019_B2'] = {'T cold out (C)':26.1,
                         'T hot out (C)':48.8,
                         'mdot_cold (l/s)':0.375,
-                        'mdot_hot (l/s)':0.462,
-                        'dP_cold (bar)':0.449,
+                        'mdot_hot (l/s)':0.449,
+                        'dP_cold (bar)':0.462,
                         'dP_hot (bar)':0.223,
                         'Q_NTU (kW)':11.23,
+                        'Q_NTU_corr (kW)':12.59,
                         'eff_NTU':0.2,
                         'mass (kg)':1.03
                         }
 
-    p_data['2019_A2'] = {'Name':'real_data',
-                                'T cold out (C)':25.4,
+    p_data['2019_A2'] = {'T cold out (C)':25.4,
                         'T hot out (C)':44.9,
                         'mdot_cold (l/s)':0.417,
-                        'mdot_hot (l/s)':0.299,
-                        'dP_cold (bar)':0.422,
+                        'mdot_hot (l/s)':0.422,
+                        'dP_cold (bar)':0.299,
                         'dP_hot (bar)':0.4,
                         'Q_NTU (kW)':10.73,
+                        'Q_NTU_corr (kW)':12.44,
                         'eff_NTU':0.25,
                         'mass (kg)':1.15
                         }
 
-    p_data['2018_A1'] = {'Name':'real_data',
-                                'T cold out (C)':27.2,
+    p_data['2018_A1'] = {'T cold out (C)':27.2,
                         'T hot out (C)':48.3,
                         'mdot_cold (l/s)':0.317,
                         'mdot_hot (l/s)':0.365,
                         'dP_cold (bar)':0.202,
                         'dP_hot (bar)':0.292,
                         'Q_NTU (kW)':8.91,
+                        'Q_NTU_corr (kW)':10.52,
                         'eff_NTU':0.2,
                         'mass (kg)':0.898
                         }
 
-    p_data['2018_C1'] = {'Name':'real_data',
-                                'T cold out (C)':28.5,
+    p_data['2018_C1'] = {'T cold out (C)':28.5,
                         'T hot out (C)':47.8,
                         'mdot_cold (l/s)':0.32,
                         'mdot_hot (l/s)':0.421,
                         'dP_cold (bar)':0.241,
                         'dP_hot (bar)':0.179,
                         'Q_NTU (kW)':9.39,
+                        'Q_NTU_corr (kW)':11.74,
                         'eff_NTU':0.22,
                         'mass (kg)':0.894
                         }
 
-    p_data['2018_C2'] = {'Name':'real_data',
-                                'T cold out (C)':28.6,
+    p_data['2018_C2'] = {'T cold out (C)':28.6,
                         'T hot out (C)':47,
                         'mdot_cold (l/s)':0.323,
                         'mdot_hot (l/s)':0.421,
                         'dP_cold (bar)':0.244,
                         'dP_hot (bar)':0.179,
                         'Q_NTU (kW)':8.62,
+                        'Q_NTU_corr (kW)':11.5,
                         'eff_NTU':0.22,
                         'mass (kg)':0.894
                         }
 
-    p_data['2018_A2'] = {'Name':'real_data',
-                                'T cold out (C)':27.9,
+    p_data['2018_A2'] = {'T cold out (C)':27.9,
                         'T hot out (C)':44.7,
                         'mdot_cold (l/s)':0.349,
                         'mdot_hot (l/s)':0.349,
                         'dP_cold (bar)':0.199,
                         'dP_hot (bar)':0.289,
                         'Q_NTU (kW)':8.22,
+                        'Q_NTU_corr (kW)':11.66,
                         'eff_NTU':0.2,
                         'mass (kg)':0.898
                         }
 
-    p_data['2018_B1'] = {'Name':'real_data',
-                                'T cold out (C)':30.3,
+    p_data['2018_B1'] = {'T cold out (C)':30.3,
                         'T hot out (C)':45.5,
                         'mdot_cold (l/s)':0.292,
                         'mdot_hot (l/s)':0.464,
                         'dP_cold (bar)':0.285,
                         'dP_hot (bar)':0.13,
                         'Q_NTU (kW)':7.55,
+                        'Q_NTU_corr (kW)':11.61,
                         'eff_NTU':0.24,
                         'mass (kg)':0.935
                         }
+
+
+    # #correct
+
+
+    # #correct
+
+
+    # p_data['2019_demo'] = {'Name':'real_data',
+    #                             'T cold out (C)':21,
+    #                    'T hot out (C)':45.3,
+    #                    'mdot_cold (l/s)':0.525,
+    #                    'mdot_hot (l/s)':0.490,
+    #                    'dP_cold (bar)':0.356,
+    #                    'dP_hot (bar)':0.163,
+    #                    'Q_NTU (kW)':15.82,
+    #                    'eff_NTU':0.198,
+    #                    'mass (kg)':1.466
+    #                    }
+
+    # p_data['2019_A1'] = {'Name':'real_data',
+    #                             'T cold out (C)':26.4,
+    #                     'T hot out (C)':47.2,
+    #                     'mdot_cold (l/s)':0.417,
+    #                     'mdot_hot (l/s)':0.299,
+    #                     'dP_cold (bar)':0.437,
+    #                     'dP_hot (bar)':0.391,
+    #                     'Q_NTU (kW)':11.98,
+    #                     'eff_NTU':0.26,
+    #                     'mass (kg)':1.15
+    #                     }
+
+    # p_data['2019_B1'] = {'Name':'real_data',
+    #                             'T cold out (C)':26,
+    #                     'T hot out (C)':48,
+    #                     'mdot_cold (l/s)':0.375,
+    #                     'mdot_hot (l/s)':0.462,
+    #                     'dP_cold (bar)':0.458,
+    #                     'dP_hot (bar)':0.219,
+    #                     'Q_NTU (kW)':11.22,
+    #                     'eff_NTU':0.21,
+    #                     'mass (kg)':1.03
+    #                     }
+
+    # p_data['2019_C1'] = {'Name':'real_data',
+    #                             'T cold out (C)':24.1,
+    #                     'T hot out (C)':46.2,
+    #                     'mdot_cold (l/s)':0.592,
+    #                     'mdot_hot (l/s)':0.462,
+    #                     'dP_cold (bar)':0.275,
+    #                     'dP_hot (bar)':0.212,
+    #                     'Q_NTU (kW)':11.77,
+    #                     'eff_NTU':0.19,
+    #                     'mass (kg)':1.09
+    #                     }
+
+    # p_data['2019_D1'] = {'Name':'real_data',
+    #                             'T cold out (C)':25,
+    #                     'T hot out (C)':43.6,
+    #                     'mdot_cold (l/s)':0.575,
+    #                     'mdot_hot (l/s)':0.349,
+    #                     'dP_cold (bar)':0.362,
+    #                     'dP_hot (bar)':0.348,
+    #                     'Q_NTU (kW)':13.71,
+    #                     'eff_NTU':0.28,
+    #                     'mass (kg)':1.16
+    #                     }
+
+    # p_data['2019_E1'] = {'Name':'real_data',
+    #                             'T cold out (C)':25,
+    #                     'T hot out (C)':46.2,
+    #                     'mdot_cold (l/s)':0.608,
+    #                     'mdot_hot (l/s)':0.483,
+    #                     'dP_cold (bar)':0.325,
+    #                     'dP_hot (bar)':0.2,
+    #                     'Q_NTU (kW)':14.87,
+    #                     'eff_NTU':0.22,
+    #                     'mass (kg)':1.11
+    #                     }
+
+    # p_data['2019_E2'] = {'Name':'real_data',
+    #                             'T cold out (C)':25.4,
+    #                     'T hot out (C)':46.6,
+    #                     'mdot_cold (l/s)':0.608,
+    #                     'mdot_hot (l/s)':0.479,
+    #                     'dP_cold (bar)':0.322,
+    #                     'dP_hot (bar)':0.201,
+    #                     'Q_NTU (kW)':15.07,
+    #                     'eff_NTU':0.22,
+    #                     'mass (kg)':1.11
+    #                     }
+
+    # p_data['2019_D2'] = {'Name':'real_data',
+    #                             'T cold out (C)':25.2,
+    #                     'T hot out (C)':44.6,
+    #                     'mdot_cold (l/s)':0.575,
+    #                     'mdot_hot (l/s)':0.354,
+    #                     'dP_cold (bar)':0.359,
+    #                     'dP_hot (bar)':0.348,
+    #                     'Q_NTU (kW)':13.2,
+    #                     'eff_NTU':0.27,
+    #                     'mass (kg)':1.16
+    #                     }
+
+    # p_data['2019_C2'] = {'Name':'real_data',
+    #                             'T cold out (C)':24.2,
+    #                     'T hot out (C)':46.2,
+    #                     'mdot_cold (l/s)':0.592,
+    #                     'mdot_hot (l/s)':0.476,
+    #                     'dP_cold (bar)':0.269,
+    #                     'dP_hot (bar)':0.199,
+    #                     'Q_NTU (kW)':12.32,
+    #                     'eff_NTU':0.19,
+    #                     'mass (kg)':1.09
+    #                     }
+
+    # p_data['2019_B2'] = {'Name':'real_data',
+    #                             'T cold out (C)':26.1,
+    #                     'T hot out (C)':48.8,
+    #                     'mdot_cold (l/s)':0.375,
+    #                     'mdot_hot (l/s)':0.462,
+    #                     'dP_cold (bar)':0.449,
+    #                     'dP_hot (bar)':0.223,
+    #                     'Q_NTU (kW)':11.23,
+    #                     'eff_NTU':0.2,
+    #                     'mass (kg)':1.03
+    #                     }
+
+    # p_data['2019_A2'] = {'Name':'real_data',
+    #                             'T cold out (C)':25.4,
+    #                     'T hot out (C)':44.9,
+    #                     'mdot_cold (l/s)':0.417,
+    #                     'mdot_hot (l/s)':0.299,
+    #                     'dP_cold (bar)':0.422,
+    #                     'dP_hot (bar)':0.4,
+    #                     'Q_NTU (kW)':10.73,
+    #                     'eff_NTU':0.25,
+    #                     'mass (kg)':1.15
+    #                     }
+
+    # p_data['2018_A1'] = {'Name':'real_data',
+    #                             'T cold out (C)':27.2,
+    #                     'T hot out (C)':48.3,
+    #                     'mdot_cold (l/s)':0.317,
+    #                     'mdot_hot (l/s)':0.365,
+    #                     'dP_cold (bar)':0.202,
+    #                     'dP_hot (bar)':0.292,
+    #                     'Q_NTU (kW)':8.91,
+    #                     'eff_NTU':0.2,
+    #                     'mass (kg)':0.898
+    #                     }
+
+    # p_data['2018_C1'] = {'Name':'real_data',
+    #                             'T cold out (C)':28.5,
+    #                     'T hot out (C)':47.8,
+    #                     'mdot_cold (l/s)':0.32,
+    #                     'mdot_hot (l/s)':0.421,
+    #                     'dP_cold (bar)':0.241,
+    #                     'dP_hot (bar)':0.179,
+    #                     'Q_NTU (kW)':9.39,
+    #                     'eff_NTU':0.22,
+    #                     'mass (kg)':0.894
+    #                     }
+
+    # p_data['2018_C2'] = {'Name':'real_data',
+    #                             'T cold out (C)':28.6,
+    #                     'T hot out (C)':47,
+    #                     'mdot_cold (l/s)':0.323,
+    #                     'mdot_hot (l/s)':0.421,
+    #                     'dP_cold (bar)':0.244,
+    #                     'dP_hot (bar)':0.179,
+    #                     'Q_NTU (kW)':8.62,
+    #                     'eff_NTU':0.22,
+    #                     'mass (kg)':0.894
+    #                     }
+
+    # p_data['2018_A2'] = {'Name':'real_data',
+    #                             'T cold out (C)':27.9,
+    #                     'T hot out (C)':44.7,
+    #                     'mdot_cold (l/s)':0.349,
+    #                     'mdot_hot (l/s)':0.349,
+    #                     'dP_cold (bar)':0.199,
+    #                     'dP_hot (bar)':0.289,
+    #                     'Q_NTU (kW)':8.22,
+    #                     'eff_NTU':0.2,
+    #                     'mass (kg)':0.898
+    #                     }
+
+    # p_data['2018_B1'] = {'Name':'real_data',
+    #                             'T cold out (C)':30.3,
+    #                     'T hot out (C)':45.5,
+    #                     'mdot_cold (l/s)':0.292,
+    #                     'mdot_hot (l/s)':0.464,
+    #                     'dP_cold (bar)':0.285,
+    #                     'dP_hot (bar)':0.13,
+    #                     'Q_NTU (kW)':7.55,
+    #                     'eff_NTU':0.24,
+    #                     'mass (kg)':0.935
+    #                     }
 
     if heat_exchanger == None:
         return p_data
@@ -1513,7 +1709,27 @@ def dict_2022(heat_exchanger = None):
                      real_data=None
                      )
 
-
+    hx_list['11'] = HX(tube_number=20,
+                     baffle_number=4,
+                     pitch=10e-3,
+                     tube_length=174e-3,
+                     plenum_length_1=50e-3,
+                     plenum_length_2=46.5e-3,
+                     baffle_gap=09.75e-3,
+                     baffle_type='across_c',
+                     tube_layout='t',
+                     shell_passes=1,
+                     tube_bundle_diameter=60e-3,
+                     tube_passes=2,
+                     design_year=2022,
+                     pump_year=2022,
+                     T_inh=60,
+                     T_inc=20,
+                     baffle_spacing_in=39e-3,
+                     baffle_spacing_out=39e-3,
+                     name='2022_C',
+                     real_data=None
+                     )
 
     hx_list['12'] = HX(tube_number=12,
                      baffle_number=8,
@@ -1633,15 +1849,15 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
         hx = hx_list[hxi]
 
         if data == 'moodle':
+
             if corrected == True:
+                real_data['Q_NTU (kW)'] = ((real_data['Q_NTU (kW)']/(real_data['T cold out (C)'] - 20) * (real_data['T cold out (C)'] - hx.T_inc)) + (real_data['Q_NTU (kW)']/(60 - real_data['T hot out (C)']) * (hx.T_inh - real_data['T hot out (C)'])))/2
                 hx.T_inh = 60
                 hx.T_inc = 20
             else:
                 pass
 
             real_data = hx.real_data
-            if corrected == True:
-                real_data['Q_NTU (kW)'] = ((real_data['Q_NTU (kW)']/(real_data['T cold out (C)'] - 20) * (real_data['T cold out (C)'] - hx.T_inc)) + (real_data['Q_NTU (kW)']/(60 - real_data['T hot out (C)']) * (hx.T_inh - real_data['T hot out (C)'])))/2
             hx_data = hx_data.append(real_data, ignore_index = True)
 
         performance = hx_design(hx,k_array) 
