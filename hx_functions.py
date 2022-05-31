@@ -864,27 +864,27 @@ def heat_exchanger_dict(heat_exchanger=None):
                         real_data = real_moodle_data['2019_D1'])
                         #2019 Group D Run 1
 
-    hx_list[8] = HX(tube_number = 19,
-                        baffle_number = 8,
-                        pitch = 11e-3,
-                        tube_length = 212e-3,
-                        plenum_length_1 = 55e-3,
-                        plenum_length_2 = 25e-3,
-                        baffle_gap = 11.22e-3,
-                        baffle_type = 'across_c',
-                        tube_layout='t',
-                        shell_passes = 1,
-                        tube_bundle_diameter= 50e-3,
-                        tube_passes = 2,
-                        baffle_spacing_in = 35.5e-3,
-                        baffle_spacing_out = 35.5e-3,
-                        design_year = 2019,
-                        pump_year = 2019,
-                        T_inh = 53.4,
-                        T_inc = 18.9,
-                        name = '2019_E1',
-                        real_data = real_moodle_data['2019_E1'])
-                        #2019 Group E Run 1
+    # hx_list[8] = HX(tube_number = 19,
+    #                     baffle_number = 8,
+    #                     pitch = 11e-3,
+    #                     tube_length = 212e-3,
+    #                     plenum_length_1 = 55e-3,
+    #                     plenum_length_2 = 25e-3,
+    #                     baffle_gap = 11.22e-3,
+    #                     baffle_type = 'across_c',
+    #                     tube_layout='t',
+    #                     shell_passes = 1,
+    #                     tube_bundle_diameter= 50e-3,
+    #                     tube_passes = 2,
+    #                     baffle_spacing_in = 35.5e-3,
+    #                     baffle_spacing_out = 35.5e-3,
+    #                     design_year = 2019,
+    #                     pump_year = 2019,
+    #                     T_inh = 53.4,
+    #                     T_inc = 18.9,
+    #                     name = '2019_E1',
+    #                     real_data = real_moodle_data['2019_E1'])
+    #                     #2019 Group E Run 1
 
     hx_list[9] = HX(tube_number = 19,
                         baffle_number = 8,
@@ -974,27 +974,27 @@ def heat_exchanger_dict(heat_exchanger=None):
                         real_data = real_moodle_data['2019_D2'])
                         #2019 Group D Run 2
 
-    hx_list[13] = HX(tube_number = 19,
-                        baffle_number = 8,
-                        pitch = 11e-3,
-                        tube_length = 212e-3,
-                        plenum_length_1 = 55e-3,
-                        plenum_length_2 = 25e-3,
-                        baffle_gap = 11.22e-3,
-                        baffle_type = 'across_c',
-                        tube_layout='t',
-                        shell_passes = 1,
-                        tube_bundle_diameter= 50e-3,
-                        tube_passes = 2,
-                        baffle_spacing_in = 35.5e-3,
-                        baffle_spacing_out = 35.5e-3,
-                        design_year = 2019,
-                        pump_year = 2019,
-                        T_inh = 53.8,
-                        T_inc = 19.1,
-                        name = '2019_E2',
-                        real_data = real_moodle_data['2019_E2'])
-                        #2019 Group E Run 2
+    # hx_list[13] = HX(tube_number = 19,
+    #                     baffle_number = 8,
+    #                     pitch = 11e-3,
+    #                     tube_length = 212e-3,
+    #                     plenum_length_1 = 55e-3,
+    #                     plenum_length_2 = 25e-3,
+    #                     baffle_gap = 11.22e-3,
+    #                     baffle_type = 'across_c',
+    #                     tube_layout='t',
+    #                     shell_passes = 1,
+    #                     tube_bundle_diameter= 50e-3,
+    #                     tube_passes = 2,
+    #                     baffle_spacing_in = 35.5e-3,
+    #                     baffle_spacing_out = 35.5e-3,
+    #                     design_year = 2019,
+    #                     pump_year = 2019,
+    #                     T_inh = 53.8,
+    #                     T_inc = 19.1,
+    #                     name = '2019_E2',
+    #                     real_data = real_moodle_data['2019_E2'])
+    #                     #2019 Group E Run 2
 
 
 
@@ -1281,7 +1281,7 @@ def predict_moodle_cases(heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel(f"prediction_data_{date.ctime()}.xlsx", sheet_name="prediction_data", index=False)
+    hx_data.to_excel(f"prediction_data.xlsx", sheet_name="prediction_data", index=False)
 
 
 
