@@ -422,11 +422,13 @@ def U_inside(hi,ho,hx,k_copper = 398):
 
 # THERMAL DESIGN
 
-def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
+def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1,z4=1):
     
     #heat capacities
     Cc = m_c*c_w.cp
     Ch = m_h*h_w.cp
+
+    thermal_factor = (z1+z2+z3+z4)
 
     hi = h_inner(m_h, h_w, hx)
     ho = h_outer(m_c, c_w, hx)
@@ -438,12 +440,12 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
-    NTU = z1*(U * A_con)/cmin
+    NTU = (U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
-    e1 = z2 * 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
+    e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
     ez = ((1 - e1*Cr)/(1 - e1))**hx.shell_passes
-    e = z3 * ((ez) - 1) / ((ez) - Cr)
+    e = thermal_factor * ((ez) - 1) / ((ez) - Cr)
 
     q_ntu = qmax * e
 
@@ -561,7 +563,7 @@ def hydraulic_design(m_c,m_h,h_w,c_w,hx,k1=1,k2=1,k3=1,k4=1,k5=1,k6=1):
 
 # HX DESIGN: tool which outputs performance for a given heat exchanger in a dictionary
 
-def hx_design(hx,k_array = np.ones(10)):
+def hx_design(hx,k_array = np.ones(11)):
 
     #curve fitting constants
     k1 = k_array[0]
@@ -573,7 +575,8 @@ def hx_design(hx,k_array = np.ones(10)):
     z1 = k_array[6]
     z2 = k_array[7]
     z3 = k_array[8]
-    mk = k_array[9]
+    z4 = k_array[9]
+    mk = k_array[10]
 
     #initial guesses for mass flowrate:
     m_h = 0.45 #initial guess for hot mass flow rate
@@ -598,7 +601,7 @@ def hx_design(hx,k_array = np.ones(10)):
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
 
     #THERMAL DESIGN
-    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1,z2,z3)
+    thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1=z1,z2=z2,z3=z3,z4=z4)
     T_outh, T_outc = thermal['T_outh'], thermal['T_outc']
 
     heat_transfer_ntu = thermal['q_ntu']
@@ -631,7 +634,7 @@ def hx_design(hx,k_array = np.ones(10)):
 
 def f_m_hot(i_list,k1,k2,k3):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([k1,k2,k3,1,1,1,1,1,1,1])
+    k_array = np.array([k1,k2,k3,1,1,1,1,1,1,1,1])
     m_hot_list = []
     for i in i_list:
         hx = hx_dict[i]
@@ -641,27 +644,18 @@ def f_m_hot(i_list,k1,k2,k3):
 
 def f_m_cold(i_list,k4,k5,k6):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,k4,k5,k6,1,1,1,1])
+    k_array = np.array([1,1,1,k4,k5,k6,1,1,1,1,1])
     m_cold_list = []
     for i in i_list:
         hx = hx_dict[i]
         m_cold_list.append(hx_design(hx,k_array)['mdot_cold (l/s)'])
 
     return np.array(m_cold_list)
-
-def f_thermal(i_list,z1,z2,z3):
-    hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,1,1,1,z1,z2,z3,1])
-    Q_predict_list = []
-    for i in i_list:
-        hx = hx_dict[i]
-        Q_predict_list.append(hx_design(hx,k_array)['Q_NTU (kW)'])
-
-    return np.array(Q_predict_list)
+    
 
 def f_mass(i_list,mk):
     hx_dict = heat_exchanger_dict()
-    k_array = np.array([1,1,1,1,1,1,1,1,1,mk])
+    k_array = np.array([1,1,1,1,1,1,1,1,1,1,mk])
     mass_predict_list = []
     for i in i_list:
         hx = hx_dict[i]
@@ -688,22 +682,33 @@ def fit_data(heat_exchanger=None):
         experimental_data = hx.real_data
         m_list_hot = np.append(m_list_hot, np.array([experimental_data['mdot_hot (l/s)']]))
         m_list_cold = np.append(m_list_cold, np.array([experimental_data['mdot_cold (l/s)']]))
-        q_list = np.append(q_list, np.array([experimental_data['Q_NTU (kW)']]))
+        q_list = np.append(q_list, np.array([experimental_data['Q_NTU_corr (kW)']]))
         mass_list = np.append(mass_list,np.array([experimental_data['mass (kg)']]))
 
     print('finding k1 k2 k3')
     k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0,np.inf),p0 = np.array([1,1,1]))
     print('finding k4 k5 k6')
     k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=(0,np.inf),p0 = np.array([1,1,1]))
-    print('finding z1 z2 z3')
-    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+
+    def f_thermal(i_list,z1,z2,z3,z4):
+        hx_dict = heat_exchanger_dict()
+        k_array = np.array([k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2],z1,z2,z3,z4,1])
+        Q_predict_list = []
+        for i in i_list:
+            hx = hx_dict[i]
+            Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
+
+        return np.array(Q_predict_list)
+
+    print('finding z1 z2 z3 z4')
+    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1,1]))
     print('findig mk')
     mk,pcov4 = curve_fit(f_mass,i_list,mass_list,bounds=(0,np.inf),p0 = np.array(0.9))
 
     k_array = np.append(k1k2k3,k4k5k6)
     k_array = np.append(k_array,z1z2z3)
     k_array = np.append(k_array,mk)
-    print('k1,k2,k3,k4,k5,k6,z1,z2,z3,mk = ',k_array)
+    print('k1,k2,k3,k4,k5,k6,z1,z2,z3,z4,mk = ',k_array)
     return k_array
 
 #endregion
@@ -1266,20 +1271,20 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_demo'] = {'T cold out (C)':21,
                        'T hot out (C)':45.3,
                        'mdot_cold (l/s)':0.525,
-                       'mdot_hot (l/s)':0.356,
-                       'dP_cold (bar)':0.49,
+                       'mdot_hot (l/s)':0.490,
+                        'dP_cold (bar)':0.356,
                        'dP_hot (bar)':0.163,
                        'Q_NTU (kW)':15.82,
                        'Q_NTU_corr (kW)':16.06,
                        'eff_NTU':0.2,
-                       'mass (kg)':0
+                       'mass (kg)':1.466
                        }
 
     p_data['2019_A1'] = {'T cold out (C)':26.4,
                         'T hot out (C)':47.2,
                         'mdot_cold (l/s)':0.417,
-                        'mdot_hot (l/s)':0.437,
-                        'dP_cold (bar)':0.299,
+                        'mdot_hot (l/s)':0.299,
+                        'dP_cold (bar)':0.437,
                         'dP_hot (bar)':0.391,
                         'Q_NTU (kW)':11.98,
                         'Q_NTU_corr (kW)':12.78,
@@ -1290,8 +1295,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_B1'] = {'T cold out (C)':26,
                         'T hot out (C)':48,
                         'mdot_cold (l/s)':0.375,
-                        'mdot_hot (l/s)':0.458,
-                        'dP_cold (bar)':0.462,
+                        'mdot_hot (l/s)':0.462,
+                        'dP_cold (bar)':0.458,
                         'dP_hot (bar)':0.219,
                         'Q_NTU (kW)':11.22,
                         'Q_NTU_corr (kW)':12.82,
@@ -1302,8 +1307,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_C1'] = {'T cold out (C)':24.1,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
-                        'mdot_hot (l/s)':0.275,
-                        'dP_cold (bar)':0.462,
+                        'mdot_hot (l/s)':0.462,
+                        'dP_cold (bar)':0.275,
                         'dP_hot (bar)':0.212,
                         'Q_NTU (kW)':11.77,
                         'Q_NTU_corr (kW)':14.23,
@@ -1314,8 +1319,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_D1'] = {'T cold out (C)':25,
                         'T hot out (C)':43.6,
                         'mdot_cold (l/s)':0.575,
-                        'mdot_hot (l/s)':0.362,
-                        'dP_cold (bar)':0.349,
+                        'mdot_hot (l/s)':0.349,
+                        'dP_cold (bar)':0.362,
                         'dP_hot (bar)':0.348,
                         'Q_NTU (kW)':13.71,
                         'Q_NTU_corr (kW)':16.27,
@@ -1326,8 +1331,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_E1'] = {'T cold out (C)':25,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.608,
-                        'mdot_hot (l/s)':0.325,
-                        'dP_cold (bar)':0.483,
+                        'mdot_hot (l/s)':0.483,
+                        'dP_cold (bar)':0.325,
                         'dP_hot (bar)':0.2,
                         'Q_NTU (kW)':14.87,
                         'Q_NTU_corr (kW)':17.24,
@@ -1338,8 +1343,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_E2'] = {'T cold out (C)':25.4,
                         'T hot out (C)':46.6,
                         'mdot_cold (l/s)':0.608,
-                        'mdot_hot (l/s)':0.322,
-                        'dP_cold (bar)':0.479,
+                        'mdot_hot (l/s)':0.479,
+                        'dP_cold (bar)':0.322,
                         'dP_hot (bar)':0.201,
                         'Q_NTU (kW)':15.07,
                         'Q_NTU_corr (kW)':17.37,
@@ -1350,8 +1355,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_D2'] = {'T cold out (C)':25.2,
                         'T hot out (C)':44.6,
                         'mdot_cold (l/s)':0.575,
-                        'mdot_hot (l/s)':0.359,
-                        'dP_cold (bar)':0.354,
+                        'mdot_hot (l/s)':0.354,
+                        'dP_cold (bar)':0.359,
                         'dP_hot (bar)':0.348,
                         'Q_NTU (kW)':13.2,
                         'Q_NTU_corr (kW)':15.62,
@@ -1362,8 +1367,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_C2'] = {'T cold out (C)':24.2,
                         'T hot out (C)':46.2,
                         'mdot_cold (l/s)':0.592,
-                        'mdot_hot (l/s)':0.269,
-                        'dP_cold (bar)':0.476,
+                        'mdot_hot (l/s)':0.476,
+                        'dP_cold (bar)':0.269,
                         'dP_hot (bar)':0.199,
                         'Q_NTU (kW)':12.32,
                         'Q_NTU_corr (kW)':14.76,
@@ -1374,8 +1379,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_B2'] = {'T cold out (C)':26.1,
                         'T hot out (C)':48.8,
                         'mdot_cold (l/s)':0.375,
-                        'mdot_hot (l/s)':0.449,
-                        'dP_cold (bar)':0.462,
+                        'mdot_hot (l/s)':0.462,
+                        'dP_cold (bar)':0.449,
                         'dP_hot (bar)':0.223,
                         'Q_NTU (kW)':11.23,
                         'Q_NTU_corr (kW)':12.59,
@@ -1386,8 +1391,8 @@ def moodle_performance_dict(heat_exchanger = None):
     p_data['2019_A2'] = {'T cold out (C)':25.4,
                         'T hot out (C)':44.9,
                         'mdot_cold (l/s)':0.417,
-                        'mdot_hot (l/s)':0.422,
-                        'dP_cold (bar)':0.299,
+                        'mdot_hot (l/s)':0.299,
+                        'dP_cold (bar)':0.422,
                         'dP_hot (bar)':0.4,
                         'Q_NTU (kW)':10.73,
                         'Q_NTU_corr (kW)':12.44,
@@ -1462,197 +1467,7 @@ def moodle_performance_dict(heat_exchanger = None):
     # #correct
 
 
-    # p_data['2019_demo'] = {'Name':'real_data',
-    #                             'T cold out (C)':21,
-    #                    'T hot out (C)':45.3,
-    #                    'mdot_cold (l/s)':0.525,
-    #                    'mdot_hot (l/s)':0.490,
-    #                    'dP_cold (bar)':0.356,
-    #                    'dP_hot (bar)':0.163,
-    #                    'Q_NTU (kW)':15.82,
-    #                    'eff_NTU':0.198,
-    #                    'mass (kg)':1.466
-    #                    }
-
-    # p_data['2019_A1'] = {'Name':'real_data',
-    #                             'T cold out (C)':26.4,
-    #                     'T hot out (C)':47.2,
-    #                     'mdot_cold (l/s)':0.417,
-    #                     'mdot_hot (l/s)':0.299,
-    #                     'dP_cold (bar)':0.437,
-    #                     'dP_hot (bar)':0.391,
-    #                     'Q_NTU (kW)':11.98,
-    #                     'eff_NTU':0.26,
-    #                     'mass (kg)':1.15
-    #                     }
-
-    # p_data['2019_B1'] = {'Name':'real_data',
-    #                             'T cold out (C)':26,
-    #                     'T hot out (C)':48,
-    #                     'mdot_cold (l/s)':0.375,
-    #                     'mdot_hot (l/s)':0.462,
-    #                     'dP_cold (bar)':0.458,
-    #                     'dP_hot (bar)':0.219,
-    #                     'Q_NTU (kW)':11.22,
-    #                     'eff_NTU':0.21,
-    #                     'mass (kg)':1.03
-    #                     }
-
-    # p_data['2019_C1'] = {'Name':'real_data',
-    #                             'T cold out (C)':24.1,
-    #                     'T hot out (C)':46.2,
-    #                     'mdot_cold (l/s)':0.592,
-    #                     'mdot_hot (l/s)':0.462,
-    #                     'dP_cold (bar)':0.275,
-    #                     'dP_hot (bar)':0.212,
-    #                     'Q_NTU (kW)':11.77,
-    #                     'eff_NTU':0.19,
-    #                     'mass (kg)':1.09
-    #                     }
-
-    # p_data['2019_D1'] = {'Name':'real_data',
-    #                             'T cold out (C)':25,
-    #                     'T hot out (C)':43.6,
-    #                     'mdot_cold (l/s)':0.575,
-    #                     'mdot_hot (l/s)':0.349,
-    #                     'dP_cold (bar)':0.362,
-    #                     'dP_hot (bar)':0.348,
-    #                     'Q_NTU (kW)':13.71,
-    #                     'eff_NTU':0.28,
-    #                     'mass (kg)':1.16
-    #                     }
-
-    # p_data['2019_E1'] = {'Name':'real_data',
-    #                             'T cold out (C)':25,
-    #                     'T hot out (C)':46.2,
-    #                     'mdot_cold (l/s)':0.608,
-    #                     'mdot_hot (l/s)':0.483,
-    #                     'dP_cold (bar)':0.325,
-    #                     'dP_hot (bar)':0.2,
-    #                     'Q_NTU (kW)':14.87,
-    #                     'eff_NTU':0.22,
-    #                     'mass (kg)':1.11
-    #                     }
-
-    # p_data['2019_E2'] = {'Name':'real_data',
-    #                             'T cold out (C)':25.4,
-    #                     'T hot out (C)':46.6,
-    #                     'mdot_cold (l/s)':0.608,
-    #                     'mdot_hot (l/s)':0.479,
-    #                     'dP_cold (bar)':0.322,
-    #                     'dP_hot (bar)':0.201,
-    #                     'Q_NTU (kW)':15.07,
-    #                     'eff_NTU':0.22,
-    #                     'mass (kg)':1.11
-    #                     }
-
-    # p_data['2019_D2'] = {'Name':'real_data',
-    #                             'T cold out (C)':25.2,
-    #                     'T hot out (C)':44.6,
-    #                     'mdot_cold (l/s)':0.575,
-    #                     'mdot_hot (l/s)':0.354,
-    #                     'dP_cold (bar)':0.359,
-    #                     'dP_hot (bar)':0.348,
-    #                     'Q_NTU (kW)':13.2,
-    #                     'eff_NTU':0.27,
-    #                     'mass (kg)':1.16
-    #                     }
-
-    # p_data['2019_C2'] = {'Name':'real_data',
-    #                             'T cold out (C)':24.2,
-    #                     'T hot out (C)':46.2,
-    #                     'mdot_cold (l/s)':0.592,
-    #                     'mdot_hot (l/s)':0.476,
-    #                     'dP_cold (bar)':0.269,
-    #                     'dP_hot (bar)':0.199,
-    #                     'Q_NTU (kW)':12.32,
-    #                     'eff_NTU':0.19,
-    #                     'mass (kg)':1.09
-    #                     }
-
-    # p_data['2019_B2'] = {'Name':'real_data',
-    #                             'T cold out (C)':26.1,
-    #                     'T hot out (C)':48.8,
-    #                     'mdot_cold (l/s)':0.375,
-    #                     'mdot_hot (l/s)':0.462,
-    #                     'dP_cold (bar)':0.449,
-    #                     'dP_hot (bar)':0.223,
-    #                     'Q_NTU (kW)':11.23,
-    #                     'eff_NTU':0.2,
-    #                     'mass (kg)':1.03
-    #                     }
-
-    # p_data['2019_A2'] = {'Name':'real_data',
-    #                             'T cold out (C)':25.4,
-    #                     'T hot out (C)':44.9,
-    #                     'mdot_cold (l/s)':0.417,
-    #                     'mdot_hot (l/s)':0.299,
-    #                     'dP_cold (bar)':0.422,
-    #                     'dP_hot (bar)':0.4,
-    #                     'Q_NTU (kW)':10.73,
-    #                     'eff_NTU':0.25,
-    #                     'mass (kg)':1.15
-    #                     }
-
-    # p_data['2018_A1'] = {'Name':'real_data',
-    #                             'T cold out (C)':27.2,
-    #                     'T hot out (C)':48.3,
-    #                     'mdot_cold (l/s)':0.317,
-    #                     'mdot_hot (l/s)':0.365,
-    #                     'dP_cold (bar)':0.202,
-    #                     'dP_hot (bar)':0.292,
-    #                     'Q_NTU (kW)':8.91,
-    #                     'eff_NTU':0.2,
-    #                     'mass (kg)':0.898
-    #                     }
-
-    # p_data['2018_C1'] = {'Name':'real_data',
-    #                             'T cold out (C)':28.5,
-    #                     'T hot out (C)':47.8,
-    #                     'mdot_cold (l/s)':0.32,
-    #                     'mdot_hot (l/s)':0.421,
-    #                     'dP_cold (bar)':0.241,
-    #                     'dP_hot (bar)':0.179,
-    #                     'Q_NTU (kW)':9.39,
-    #                     'eff_NTU':0.22,
-    #                     'mass (kg)':0.894
-    #                     }
-
-    # p_data['2018_C2'] = {'Name':'real_data',
-    #                             'T cold out (C)':28.6,
-    #                     'T hot out (C)':47,
-    #                     'mdot_cold (l/s)':0.323,
-    #                     'mdot_hot (l/s)':0.421,
-    #                     'dP_cold (bar)':0.244,
-    #                     'dP_hot (bar)':0.179,
-    #                     'Q_NTU (kW)':8.62,
-    #                     'eff_NTU':0.22,
-    #                     'mass (kg)':0.894
-    #                     }
-
-    # p_data['2018_A2'] = {'Name':'real_data',
-    #                             'T cold out (C)':27.9,
-    #                     'T hot out (C)':44.7,
-    #                     'mdot_cold (l/s)':0.349,
-    #                     'mdot_hot (l/s)':0.349,
-    #                     'dP_cold (bar)':0.199,
-    #                     'dP_hot (bar)':0.289,
-    #                     'Q_NTU (kW)':8.22,
-    #                     'eff_NTU':0.2,
-    #                     'mass (kg)':0.898
-    #                     }
-
-    # p_data['2018_B1'] = {'Name':'real_data',
-    #                             'T cold out (C)':30.3,
-    #                     'T hot out (C)':45.5,
-    #                     'mdot_cold (l/s)':0.292,
-    #                     'mdot_hot (l/s)':0.464,
-    #                     'dP_cold (bar)':0.285,
-    #                     'dP_hot (bar)':0.13,
-    #                     'Q_NTU (kW)':7.55,
-    #                     'eff_NTU':0.24,
-    #                     'mass (kg)':0.935
-    #                     }
+ 
 
     if heat_exchanger == None:
         return p_data
@@ -1809,9 +1624,9 @@ def dict_2022(heat_exchanger = None):
                         baffle_gap = 13.9e-3,
                         baffle_type = 'across_c',
                         tube_layout='t',
-                        shell_passes = 2,
+                        shell_passes = 1,
                         tube_bundle_diameter= 56e-3,
-                        tube_passes = 4,
+                        tube_passes = 1,
                         baffle_spacing_in = 38e-3,
                         baffle_spacing_out = 38e-3,
                         design_year = 2019,
@@ -1838,7 +1653,7 @@ def dict_2022(heat_exchanger = None):
 
 # HX_MOODLE_DATA: tool which outputs a dataframe of data for the moodle heat exchangers
 
-def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False):
+def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1,1,1]),sort_data = False):
 
     if data == 'moodle':
         hx_list = heat_exchanger_dict(heat_exchanger)
@@ -1879,7 +1694,7 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel(f"prediction_data.xlsx", sheet_name="prediction_data", index=False)
+    hx_data.to_excel(f"prediction_data_{data}.xlsx", sheet_name="prediction_data", index=False)
 
 
 
