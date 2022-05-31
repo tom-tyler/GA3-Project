@@ -700,7 +700,7 @@ def fit_data(heat_exchanger=None):
         Q_predict_list = []
         for i in i_list:
             hx = hx_dict[i]
-            Q_predict_list.append(hx_design(hx,k_array)['eff_NTU'])
+            Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
 
         return np.array(Q_predict_list)
 

@@ -5,18 +5,18 @@ from hx_classes import HX
 performance = []
 tn = []
 
-k_array = [5.09582324e-13, 1.06322974e-02, 1.60725045e+01, 7.70041192e-14,
-9.74222768e-01, 7.39759976e+00, 6.78054364e+01, 7.84344345e-01,
-3.25600821e-01, 8.46334898e-01]#fit_data() #once this is done once just copy the array to save time
+k_array = [2.57793651e-01, 3.76007112e-11, 9.08395408e+00, 7.70041192e-14,
+9.74222768e-01, 7.39759976e+00, 2.33076139e+06, 2.06409375e+00,
+2.67140377e-01, 9.49440577e-01] # fit_data() once this is done once just copy the array to save time
 
 for n in range(1,20):
     hx =  HX(tube_number = 20,
-             baffle_number = n,
+             baffle_number = 6,
              pitch = 10e-3,
              tube_length = 172e-3,
              plenum_length_1 = 58e-3,
              plenum_length_2 = 23e-3,
-             baffle_gap = n/1000,
+             baffle_gap = 20e-3,
              baffle_type = 'across_c',
              tube_layout='t',
              shell_passes = 2,
@@ -47,7 +47,7 @@ ax.set_ylabel('Q (W)')
 
 # set the limits
 ax.set_xlim(0, 20)
-ax.set_ylim(13, 14)
+ax.set_ylim(10, 14)
 
 # set the grid on
 ax.grid('on')
