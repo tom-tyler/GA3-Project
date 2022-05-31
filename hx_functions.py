@@ -437,7 +437,7 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     U = U_inside(hi,ho,hx)
     A_con = hx.convection_area
 
-    cmin = min(Cc,Ch)
+    cmin = z3*min(Cc,Ch)
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
@@ -454,11 +454,12 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     e = z1*e
 
     q_ntu = qmax * e
+    q_corr = cmin * 40 * e
 
     T_outc = q_ntu/Cc + hx.T_inc
     T_outh = hx.T_inh - q_ntu/Ch
 
-    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U}
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U,'q_corr':q_corr}
     return thermal
 
 # HYDRAULIC DESIGN
@@ -604,6 +605,7 @@ def hx_design(hx,k_array = np.ones(10)):
 
     m_h, m_c = hydraulic['m_h'], hydraulic['m_c']
     dP_hot, dP_cold = hydraulic['dP_hot'], hydraulic['dP_cold']
+    Ch, Cc = hydraulic['Ch'], hydraulic['Cc']
 
     #THERMAL DESIGN
     thermal = thermal_design(m_h,m_c,h_w,c_w,hx,z1,z2,z3)
@@ -611,9 +613,7 @@ def hx_design(hx,k_array = np.ones(10)):
 
     heat_transfer_ntu = thermal['q_ntu']
     eff_ntu = thermal['eff_ntu']
-    ht_corr_c = heat_transfer_ntu/(T_outc - hx.T_inc) * (T_outc - 20)
-    ht_corr_h = heat_transfer_ntu/(hx.T_inh - T_outh) * (60 - T_outh)
-    ht_corr = (ht_corr_c + ht_corr_h)/2
+    ht_corr = thermal['q_corr']
 
     hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
             'T cold in (C)':hx.T_inc,
@@ -686,7 +686,7 @@ def fit_data(heat_exchanger=None):
         experimental_data = hx.real_data
         m_list_hot = np.append(m_list_hot, np.array([experimental_data['mdot_hot (l/s)']]))
         m_list_cold = np.append(m_list_cold, np.array([experimental_data['mdot_cold (l/s)']]))
-        q_list = np.append(q_list, np.array([experimental_data['eff_NTU']]))
+        q_list = np.append(q_list, np.array([experimental_data['Q_NTU_corr (kW)']]))
         mass_list = np.append(mass_list,np.array([experimental_data['mass (kg)']]))
 
     print('finding k1 k2 k3')
@@ -700,12 +700,12 @@ def fit_data(heat_exchanger=None):
         Q_predict_list = []
         for i in i_list:
             hx = hx_dict[i]
-            Q_predict_list.append(hx_design(hx,k_array)['eff_NTU'])
+            Q_predict_list.append(hx_design(hx,k_array)['Q_NTU_corr (kW)'])
 
         return np.array(Q_predict_list)
 
     print('finding z1 z2 z3')
-    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0.5,1.5),p0 = np.array([1,1,1]))
+    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
     
     #z1z2z3 = np.array([1,1,1])
     
@@ -1717,7 +1717,7 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel(f"prediction_data_{data}final4.xlsx", sheet_name="prediction_data", index=False)
+    hx_data.to_excel(f"prediction_data_{data}final5.xlsx", sheet_name="prediction_data", index=False)
 
 
 
