@@ -1,5 +1,6 @@
 import hx_functions as hxf
 from hx_classes import water
+import numpy as np
 
 
 # hxf.brute_opt(n=1)
@@ -22,3 +23,5 @@ k_array = [1,1,1,1,1,1,1,1,1,1,1]
 print(k_array)
 
 hxf.predict_hx(data = 'moodle',k_array=k_array)
+
+hxf.predict_hx(data = '2022',k_array=k_array)
