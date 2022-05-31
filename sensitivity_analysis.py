@@ -7,11 +7,11 @@ tn = []
 
 k_array = [5.09582324e-13, 1.06322974e-02, 1.60725045e+01, 7.70041192e-14,
 9.74222768e-01, 7.39759976e+00, 6.78054364e+01, 7.84344345e-01,
-3.25600821e-01, 8.46334898e-01]
+3.25600821e-01, 8.46334898e-01]#fit_data() #once this is done once just copy the array to save time
 
 for n in range(1,20):
     hx =  HX(tube_number = 20,
-             baffle_number = 6,
+             baffle_number = n,
              pitch = 10e-3,
              tube_length = 172e-3,
              plenum_length_1 = 58e-3,
