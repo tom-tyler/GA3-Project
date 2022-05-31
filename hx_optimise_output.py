@@ -19,4 +19,6 @@ from hx_classes import water
 
 k_array = hxf.fit_data()
 
-hxf.predict_hx(data = 'moodle',k_array=k_array, corrected = True)
+print(k_array)
+
+hxf.predict_hx(data = 'moodle',k_array=k_array)

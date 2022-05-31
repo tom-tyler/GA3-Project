@@ -603,6 +603,9 @@ def hx_design(hx,k_array = np.ones(10)):
 
     heat_transfer_ntu = thermal['q_ntu']
     eff_ntu = thermal['eff_ntu']
+    ht_corr_c = heat_transfer_ntu/(T_outc - hx.T_inc) * (T_outc - 20)
+    ht_corr_h = heat_transfer_ntu/(hx.T_inh - T_outh) * (60 - T_outh)
+    ht_corr = (ht_corr_c + ht_corr_h)/2
 
     hx_dict = {'Name':f'{hx.name}-p{(hx.pump_year)}',
             'T cold in (C)':hx.T_inc,
@@ -614,6 +617,7 @@ def hx_design(hx,k_array = np.ones(10)):
             'dP_cold (bar)':dP_cold/1e5,
             'dP_hot (bar)':dP_hot/1e5,
             'Q_NTU (kW)':heat_transfer_ntu/1000,
+            'Q_NTU_corr (kW)':ht_corr/1000,
             'eff_NTU':eff_ntu,
             'mass (kg)':mk*hx.total_mass()
             }                                                        
@@ -1715,7 +1719,7 @@ def dict_2022(heat_exchanger = None):
                      tube_length=174e-3,
                      plenum_length_1=50e-3,
                      plenum_length_2=46.5e-3,
-                     baffle_gap=09.75e-3,
+                     baffle_gap=9.75e-3,
                      baffle_type='across_c',
                      tube_layout='t',
                      shell_passes=1,
@@ -1728,8 +1732,7 @@ def dict_2022(heat_exchanger = None):
                      baffle_spacing_in=39e-3,
                      baffle_spacing_out=39e-3,
                      name='2022_C',
-                     real_data=None
-                     )
+                     real_data=None)
 
     hx_list['12'] = HX(tube_number=12,
                      baffle_number=8,
@@ -1835,7 +1838,7 @@ def dict_2022(heat_exchanger = None):
 
 # HX_MOODLE_DATA: tool which outputs a dataframe of data for the moodle heat exchangers
 
-def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False,corrected = False):
+def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1,1,1,1,1,1]),sort_data = False):
 
     if data == 'moodle':
         hx_list = heat_exchanger_dict(heat_exchanger)
@@ -1849,13 +1852,6 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
         hx = hx_list[hxi]
 
         if data == 'moodle':
-
-            if corrected == True:
-                real_data['Q_NTU (kW)'] = ((real_data['Q_NTU (kW)']/(real_data['T cold out (C)'] - 20) * (real_data['T cold out (C)'] - hx.T_inc)) + (real_data['Q_NTU (kW)']/(60 - real_data['T hot out (C)']) * (hx.T_inh - real_data['T hot out (C)'])))/2
-                hx.T_inh = 60
-                hx.T_inc = 20
-            else:
-                pass
 
             real_data = hx.real_data
             hx_data = hx_data.append(real_data, ignore_index = True)
@@ -1874,11 +1870,12 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
                 'dP_cold (bar)',
                 'dP_hot (bar)',
                 'Q_NTU (kW)',
+                'Q_NTU_corr (kW)',
                 'eff_NTU',
                 'mass (kg)'
                     ]]
     if sort_data == True:
-        hx_data = hx_data.sort_values(by="Q_NTU (kW)", ascending=False).head()
+        hx_data = hx_data.sort_values(by="Q_NTU_corr (kW)", ascending=False).head()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
