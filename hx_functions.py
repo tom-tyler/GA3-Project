@@ -1039,6 +1039,29 @@ def heat_exchanger_dict(heat_exchanger=None):
                         name = '2022_F',
                         real_data = real_moodle_data['2022_F'])
                         #2022 Group F (Tin s are estimates)
+
+    hx_list[16] = HX(tube_number = 13,
+                        baffle_number = 8,
+                        pitch = 12e-3,
+                        tube_length = 212e-3,
+                        plenum_length_1 = 53.5e-3,
+                        plenum_length_2 = 53.5e-3,
+                        baffle_gap = 13.9e-3,
+                        baffle_type = 'across_c',
+                        tube_layout='t',
+                        shell_passes = 2,
+                        tube_bundle_diameter= 56e-3,
+                        tube_passes = 4,
+                        baffle_spacing_in = 38e-3,
+                        baffle_spacing_out = 38e-3,
+                        design_year = 2019,
+                        pump_year = 2019,
+                        T_inh = 53,
+                        T_inc = 19.5,
+                        name = 'BLIND_TEST',
+                        real_data = real_moodle_data['BLIND_TEST'])
+                        #Blind test case
+                    
     
 
     # hx_list[13] = HX(tube_number = 19,
