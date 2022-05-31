@@ -692,7 +692,7 @@ def fit_data(heat_exchanger=None):
     print('finding k1 k2 k3')
     k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0.75,1.25),p0 = np.array([1,1,1]))
     print('finding k4 k5 k6')
-    k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=([0.1,0.1,0.75],[10,10,1.25]),p0 = np.array([1,1,1]))
+    k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=([0.001,0.001,0.75],[100,100,1.25]),p0 = np.array([1,1,1]))
 
     def f_thermal(i_list,z1,z2,z3):
         hx_dict = heat_exchanger_dict()
