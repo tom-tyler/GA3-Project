@@ -435,13 +435,13 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     ho = h_outer(m_c, c_w, hx,z2=z2)
     
     U = U_inside(hi,ho,hx)
-    A_con = z3*hx.convection_area
+    A_con = hx.convection_area
 
     cmin = min(Cc,Ch)
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
-    NTU = (U * A_con)/cmin
+    NTU = z3*(U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
     e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
