@@ -148,7 +148,7 @@ class HX:
         
         self.sigma = self.tube_number*self.tube.c_area/self.plate.area #sigma, used to find Ke and Kc
         self.sigma_nozzle = self.nozzle_c_area/(self.nozzle_exit_area) #sigma for nozzle
-        self.convection_area = np.pi*self.tube.d_inner*(self.shell_length*tube_passes)*tube_number # total area of tube surface for convection
+        self.convection_area = np.pi*self.tube.d_inner*(self.shell_length)*tube_number # total area of tube surface for convection
         self.baffle_cut = self.baffle_gap/self.shell.d_inner
         self.tube_bundle_diameter = tube_bundle_diameter
         

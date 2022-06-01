@@ -373,14 +373,14 @@ def correction_factor(T_inc,T_inh,T_outc,T_outh,hx):
 
 # HEAT TRANSFER VARIABLES
 #region
-def h_inner(m_h, liquid, hx):
+def h_inner(m_h, liquid, hx, z1=1):
     m_tube = m_h/(hx.tube_number/hx.tube_passes)
     V_tube = V(m_tube,liquid,hx.tube.c_area)
 
     di = hx.tube.d_inner
 
     R = Re(V_tube,di,liquid)
-    fr = friction_factor(R)
+    fr = z1*friction_factor(R)
 
     Nu = (fr/2)*R*liquid.Pr/(1.07 + 12.7*np.sqrt(fr/2)*(liquid.Pr**(2/3) - 1))
 
@@ -390,7 +390,7 @@ def h_inner(m_h, liquid, hx):
 
 
 
-def h_outer(m_c, liquid, hx): # bell delaware method
+def h_outer(m_c, liquid, hx, z2=1): # bell delaware method
 
     #ideal calculation
     G = m_c / hx.Sm
@@ -401,7 +401,7 @@ def h_outer(m_c, liquid, hx): # bell delaware method
 
     ho_ideal = j * liquid.cp * G * liquid.Pr**(-2/3)
 
-    ho = ho_ideal * hx.Jc * hx.Jl * hx.Jb * hx.Jr * hx.Js
+    ho = ho_ideal * hx.Jc * hx.Jl * hx.Jb * hx.Jr * hx.Js * z2
     return ho
 
 
@@ -431,17 +431,17 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     Cc = m_c*c_w.cp
     Ch = m_h*h_w.cp
 
-    hi = h_inner(m_h, h_w, hx)
-    ho = h_outer(m_c, c_w, hx)
+    hi = h_inner(m_h, h_w, hx,z1=z1)
+    ho = h_outer(m_c, c_w, hx,z2=z2)
     
     U = U_inside(hi,ho,hx)
-    A_con = hx.convection_area
+    A_con = z3*hx.convection_area
 
-    cmin = z3*min(Cc,Ch)
+    cmin = min(Cc,Ch)
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
-    NTU = z2*(U * A_con)/cmin
+    NTU = (U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
     e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
@@ -449,9 +449,7 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
         e = e1
     else:
         ez = ((1 - e1*Cr)/(1 - e1))**(hx.shell_passes)
-        e = ((ez) - 1) / ((ez) - Cr)
-
-    e = z1*e
+        e =((ez) - 1) / ((ez) - Cr)
 
     q_ntu = qmax * e
     q_corr = cmin * 40 * e
@@ -690,9 +688,9 @@ def fit_data(heat_exchanger=None):
         mass_list = np.append(mass_list,np.array([experimental_data['mass (kg)']]))
 
     print('finding k1 k2 k3')
-    k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0.75,1.25),p0 = np.array([1,1,1]))
+    k1k2k3, pcov1 = curve_fit(f_m_hot,i_list,m_list_hot,bounds=(0.75,2),p0 = np.array([1,1,1]))
     print('finding k4 k5 k6')
-    k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=([0.001,0.001,0.75],[100,100,1.25]),p0 = np.array([1,1,1]))
+    k4k5k6, pcov2 = curve_fit(f_m_cold,i_list,m_list_cold,bounds=([0.5,0.5,0.75],[10,10,1.25]),p0 = np.array([1,1,1]))
 
     def f_thermal(i_list,z1,z2,z3):
         hx_dict = heat_exchanger_dict()
@@ -705,12 +703,12 @@ def fit_data(heat_exchanger=None):
         return np.array(Q_predict_list)
 
     print('finding z1 z2 z3')
-    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0,np.inf),p0 = np.array([1,1,1]))
+    z1z2z3, pcov3 = curve_fit(f_thermal,i_list,q_list,bounds=(0.5,1.5),p0 = np.array([1,1,1]))
     
     #z1z2z3 = np.array([1,1,1])
     
     print('findig mk')
-    mk,pcov4 = curve_fit(f_mass,i_list,mass_list,bounds=(0.5,2),p0 = np.array(0.9))
+    mk,pcov4 = curve_fit(f_mass,i_list,mass_list,bounds=(0.2,2),p0 = np.array(0.9))
 
     k_array = np.append(k1k2k3,k4k5k6)
     k_array = np.append(k_array,z1z2z3)
@@ -1516,7 +1514,7 @@ def dict_2022(heat_exchanger = None):
                     baffle_gap=12.00e-3,
                     baffle_type='across_c',
                     tube_layout='t',
-                    shell_passes=2,
+                    shell_passes=1,
                     tube_bundle_diameter=56e-3,
                     tube_passes=1,
                     design_year=2022,

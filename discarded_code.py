@@ -589,3 +589,12 @@ def effectiveness(Q,Cc,Ch,T_inc,T_inh):
     #     return np.array(Q_predict_list)
 
     [k1k2k3[0],k1k2k3[1],k1k2k3[2],k4k5k6[0],k4k5k6[1],k4k5k6[2]
+
+        q_ntu = qmax * e
+    q_corr = cmin * 40 * e
+
+    T_outc = q_ntu/Cc + hx.T_inc
+    T_outh = hx.T_inh - q_ntu/Ch
+
+    thermal = {'T_outh':T_outh,'T_outc':T_outc,'q_ntu':q_ntu,'eff_ntu':e,'U':U,'q_corr':q_corr}
+    return thermal
