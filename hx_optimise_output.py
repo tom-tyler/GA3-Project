@@ -18,9 +18,7 @@ import numpy as np
 
 #print(hxf.brute_opt_2())
 
-k_array = hxf.fit_data()
-
-print(k_array)
+k_array = np.array([0.75, 0.75, 2.0, 0.5, 1.52671187, 1.25, 1.5, 1.5, 0.60125398, 0.9503981 ])
 
 hxf.predict_hx(data = 'moodle',k_array=k_array)
 

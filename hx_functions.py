@@ -441,7 +441,7 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     cmax = max(Cc,Ch)
     qmax = cmin * (hx.T_inh - hx.T_inc) #maximum possible heat tranfer
     Cr = cmin/cmax #ratio of specific heats 
-    NTU = z3*(U * A_con)/cmin
+    NTU = (U * A_con)/cmin
     c_root = (1 + Cr**2)**0.5
 
     e1 = 2 / (1 + Cr + c_root * ((1 + np.exp(-NTU*c_root))/(1 - np.exp(-NTU*c_root))))
@@ -450,6 +450,8 @@ def thermal_design(m_h,m_c,h_w,c_w,hx,z1=1,z2=1,z3=1):
     else:
         ez = ((1 - e1*Cr)/(1 - e1))**(hx.shell_passes)
         e =((ez) - 1) / ((ez) - Cr)
+
+    e = z3*e
 
     q_ntu = qmax * e
     q_corr = cmin * 40 * e
@@ -879,27 +881,27 @@ def heat_exchanger_dict(heat_exchanger=None):
                         #2019 Group D Run 1
 
 
-    hx_list[8] = HX(tube_number = 19,
-                        baffle_number = 8,
-                        pitch = 11e-3,
-                        tube_length = 212e-3,
-                        plenum_length_1 = 55e-3,
-                        plenum_length_2 = 25e-3,
-                        baffle_gap = 11.22e-3,
+    hx_list[4] = HX(tube_number = 16,
+                        baffle_number = 12,
+                        pitch = 10e-3,
+                        tube_length = 221.7e-3,
+                        plenum_length_1 = 53e-3,
+                        plenum_length_2 = 20e-3,
+                        baffle_gap = 11.34e-3,
                         baffle_type = 'across_c',
                         tube_layout='t',
-                        shell_passes = 1,
+                        shell_passes = 2,
                         tube_bundle_diameter= 50e-3,
-                        tube_passes = 2,
-                        baffle_spacing_in = 35.5e-3,
-                        baffle_spacing_out = 35.5e-3,
+                        tube_passes = 4,
+                        baffle_spacing_in = 40.5e-3,
+                        baffle_spacing_out = 15.1e-3,
                         design_year = 2019,
                         pump_year = 2019,
                         T_inh = 53.9,
                         T_inc = 19.4,
-                        name = '2019_A2',
-                        real_data = real_moodle_data['2019_A2'])
-                        #2019 Group A Run 2
+                        name = '2019_A1',
+                        real_data = real_moodle_data['2019_A1'])
+                        #2019 Group A Run 1
 
     hx_list[9] = HX(tube_number = 14,
                        baffle_number = 11,
@@ -1715,7 +1717,7 @@ def predict_hx(data = 'moodle',heat_exchanger=None,k_array = np.array([1,1,1,1,1
     with pd.option_context('display.max_rows', None, 'display.max_columns', None,"display.precision", 3):  # more options can be specified also
         print(hx_data)
 
-    hx_data.to_excel(f"prediction_data_{data}final5.xlsx", sheet_name="prediction_data", index=False)
+    hx_data.to_excel(f"prediction_data_{data}final6.xlsx", sheet_name="prediction_data", index=False)
 
 
 
