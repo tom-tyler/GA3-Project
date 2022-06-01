@@ -5,31 +5,31 @@ from hx_classes import HX
 performance = []
 tn = []
 
-k_array = [2.57793651e-01, 3.76007112e-11, 9.08395408e+00, 7.70041192e-14,
-9.74222768e-01, 7.39759976e+00, 2.33076139e+06, 2.06409375e+00,
-2.67140377e-01, 9.49440577e-01] # fit_data() once this is done once just copy the array to save time
+k_array = [0.75,       0.75,       2.,         0.5,        1.52671187, 1.25,
+1.5,        1.5,        0.60125398, 0.9503981] #once this is done once just copy the array to save time
 
 for n in range(1,20):
-    hx =  HX(tube_number = 20,
-             baffle_number = 6,
-             pitch = 10e-3,
-             tube_length = 172e-3,
-             plenum_length_1 = 58e-3,
-             plenum_length_2 = 23e-3,
-             baffle_gap = 20e-3,
-             baffle_type = 'across_c',
+    hx =  HX(tube_number=20,
+             baffle_number=6,
+             pitch=10e-3,
+             tube_length=172e-3,
+             plenum_length_1=58e-3,
+             plenum_length_2=23e-3,
+             baffle_gap=20.00e-3,
+             baffle_type='across_c',
              tube_layout='t',
-             shell_passes = 2,
-             tube_bundle_diameter= 54e-3,
-             tube_passes = 4,
-             baffle_spacing_in = 41.5e-3,
-             baffle_spacing_out = 21.5e-3,
-             design_year = 2022,
-             pump_year = 2022,
-             T_inh = 60,
-             T_inc = 20,
-             name = '2022_F',
-             real_data = None)
+             shell_passes=2,
+             tube_bundle_diameter=55e-3,
+             tube_passes=4,
+             design_year=2022,
+             pump_year=2022,
+             T_inh=60,
+             T_inc=20,
+             baffle_spacing_in=41.5e-3,
+             baffle_spacing_out=21.5e-3,
+             name='2022_F',
+             real_data=None
+             )
 
     tn.append(n)
     performance.append(hx_design(hx,k_array)['Q_NTU (kW)'])
@@ -47,7 +47,7 @@ ax.set_ylabel('Q (W)')
 
 # set the limits
 ax.set_xlim(0, 20)
-ax.set_ylim(10, 14)
+ax.set_ylim(10, 20)
 
 # set the grid on
 ax.grid('on')
